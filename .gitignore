@@ -28,4 +28,5 @@ hs_err_pid*
 # Visual Studio
 .vs/
 bin/
+obj/
 *.user
