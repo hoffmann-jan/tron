@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using Server.Logic;
+using System.Net.Sockets;
 
 namespace Server
 {
@@ -8,9 +9,9 @@ namespace Server
     public class TronClient
     {
         /// <summary>
-        /// Id.
+        /// Player.
         /// </summary>
-        public int PlayerId { get; set; }
+        public TronPlayer Player { get; set; }
         /// <summary>
         /// Socket.
         /// </summary>

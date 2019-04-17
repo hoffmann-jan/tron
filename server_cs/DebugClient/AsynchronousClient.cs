@@ -29,6 +29,20 @@ public class AsynchronousClient
     // The response from the remote device.  
     private static string response = string.Empty;
 
+    public static Socket Connect(IPAddress iPAddress, int port)
+    {
+        // Establish the remote endpoint for the socket.
+        IPEndPoint remoteEndPoint = new IPEndPoint(iPAddress, port);
+
+        // Create a TCP/IP socket.  
+        Socket client = new Socket(iPAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+        // Connect to the remote endpoint.  
+        client.BeginConnect(remoteEndPoint, new AsyncCallback(ConnectCallback), client);
+
+        return client;
+    }
+
     public static void StartClient()
     {
         // Connect to a remote device.  
@@ -90,7 +104,7 @@ public class AsynchronousClient
         }
     }
 
-    private static void Receive(Socket client)
+    public static void Receive(Socket client)
     {
         try
         {
@@ -146,14 +160,13 @@ public class AsynchronousClient
         }
     }
 
-    private static void Send(Socket client, String data)
+    public static void Send(Socket client, String data)
     {
         // Convert the string data to byte data using ASCII encoding.  
         byte[] byteData = Encoding.ASCII.GetBytes(data);
 
         // Begin sending the data to the remote device.  
-        client.BeginSend(byteData, 0, byteData.Length, 0,
-            new AsyncCallback(SendCallback), client);
+        client.BeginSend(byteData, 0, byteData.Length, 0, new AsyncCallback(SendCallback), client);
     }
 
     private static void SendCallback(IAsyncResult ar)

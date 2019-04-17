@@ -1,11 +1,10 @@
-﻿namespace TestClient
+﻿namespace DebugClient
 {
     class Program
     {
         public static int Main(string[] args)
         {
-            AsynchronousClient.StartClient();
-            return 0;
+            return Menu.Enter();
         }
     }
 }

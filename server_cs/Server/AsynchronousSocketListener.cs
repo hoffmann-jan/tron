@@ -5,40 +5,18 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-using DebugProperties;
-
 namespace Server
 {
-    /// <summary>
-    /// State object for reading client data asynchronously.
-    /// </summary>
-    public class StateObject
-    {
-        // Client socket.
-        public Socket WorkSocket = null;
-        // Size of receive buffe
-        public const int BufferSize = Globals.BufferSize;
-        // Receive buffer.
-        public byte[] Buffer = new byte[BufferSize];
-        // Received data string.
-        public StringBuilder StringBuilder = new StringBuilder();
-    }
-
     /// <summary>
     /// The server socket.
     /// </summary>
     public class AsynchronousSocketListener
     {
         #region Fields
+        /// <summary>
+        /// Connected Clients.
+        /// </summary>
         private static List<Socket> _ActiveClients = new List<Socket>();
-        /// <summary>
-        // Game will start with minimun of 2 players.
-        /// </summary>
-        private static bool _WaitForOtherPlayer = true;
-        /// <summary>
-        /// Count of connected players.
-        /// </summary>
-        private static int _ActiveClientsCount = _ActiveClients.Count;
         #endregion
 
         #region Properties
@@ -155,7 +133,7 @@ namespace Server
             }
         }
 
-        private static void Send(Socket handler, String data)
+        private static void Send(Socket handler, string data)
         {
             // Convert the string data to byte data using ASCII encoding.
             byte[] byteData = Encoding.ASCII.GetBytes(data);
