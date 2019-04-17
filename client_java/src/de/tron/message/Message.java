@@ -4,7 +4,7 @@ import java.util.Set;
 
 public class Message {
 
-	private int id;
+	private int id = -1;
 	
 	private MessageType type;
 	private MovementDirection direction;
