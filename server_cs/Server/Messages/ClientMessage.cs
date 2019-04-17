@@ -12,12 +12,12 @@ namespace Server.Messages
         /// <summary>
         /// PlayerId.
         /// </summary>
-        int id;
+        public int id;
 
         /// <summary>
         /// Kind of message.
         /// </summary>
-        enum Type
+        public enum Type
         {
             TYPE_CONNECT = 0,  // S <-> C: Request (C) / accept (S) connection, server sends player his id
             TYPE_DISCONNECT = 1,  // S <-> C: Disconnect (C, S) connection
@@ -30,7 +30,7 @@ namespace Server.Messages
         /// <summary>
         /// Direction.
         /// </summary>
-        enum Move
+        public enum Move
         {
             MOVE_UP = 0,
             MOVE_DOWN = 1,
