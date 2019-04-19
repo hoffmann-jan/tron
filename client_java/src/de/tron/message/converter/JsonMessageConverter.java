@@ -15,7 +15,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-import de.tron.message.Coordinate;
+import de.tron.bike.Coordinate;
 import de.tron.message.Message;
 import de.tron.message.MessageType;
 import de.tron.message.MovementDirection;

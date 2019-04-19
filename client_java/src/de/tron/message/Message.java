@@ -3,6 +3,8 @@ package de.tron.message;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.tron.bike.Coordinate;
+
 public class Message {
 
 	private int id = -1;

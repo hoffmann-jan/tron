@@ -1,4 +1,4 @@
-package de.tron.message;
+package de.tron.bike;
 
 public class Coordinate {
 

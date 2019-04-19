@@ -9,7 +9,7 @@ import java.io.FileReader;
 
 import org.junit.Test;
 
-import de.tron.message.Coordinate;
+import de.tron.bike.Coordinate;
 import de.tron.message.Message;
 import de.tron.message.MessageType;
 import de.tron.message.converter.JsonMessageConverter;
