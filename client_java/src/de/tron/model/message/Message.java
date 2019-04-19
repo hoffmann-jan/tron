@@ -1,9 +1,9 @@
-package de.tron.message;
+package de.tron.model.message;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import de.tron.bike.Coordinate;
+import de.tron.model.bike.Coordinate;
 
 public class Message {
 

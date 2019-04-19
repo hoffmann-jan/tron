@@ -1,4 +1,4 @@
-package de.tron.message.converter;
+package de.tron.model.message.converter;
 
 import java.lang.reflect.Type;
 import java.util.Collections;
@@ -15,10 +15,10 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-import de.tron.bike.Coordinate;
-import de.tron.message.Message;
-import de.tron.message.MessageType;
-import de.tron.message.MovementDirection;
+import de.tron.model.bike.Coordinate;
+import de.tron.model.message.Message;
+import de.tron.model.message.MessageType;
+import de.tron.model.message.MovementDirection;
 
 public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeserializer<Message> {
 

@@ -1,4 +1,4 @@
-package de.tron.bike;
+package de.tron.model.bike;
 
 public class Coordinate {
 

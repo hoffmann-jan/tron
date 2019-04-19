@@ -1,6 +1,6 @@
-package de.tron.bike;
+package de.tron.model.bike;
 
-import de.tron.message.Message;
+import de.tron.model.message.Message;
 
 public class Bike {
 

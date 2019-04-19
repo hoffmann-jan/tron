@@ -1,4 +1,4 @@
-package de.tron.message;
+package de.tron.model.message;
 
 public enum MovementDirection {
 

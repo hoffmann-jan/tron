@@ -1,4 +1,4 @@
-package de.tron.message.converter;
+package de.tron.model.message.converter;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -9,10 +9,10 @@ import java.io.FileReader;
 
 import org.junit.Test;
 
-import de.tron.bike.Coordinate;
-import de.tron.message.Message;
-import de.tron.message.MessageType;
-import de.tron.message.converter.JsonMessageConverter;
+import de.tron.model.bike.Coordinate;
+import de.tron.model.message.Message;
+import de.tron.model.message.MessageType;
+import de.tron.model.message.converter.JsonMessageConverter;
 
 public class JsonMessageConverterTest {
 
