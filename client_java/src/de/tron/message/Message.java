@@ -1,15 +1,16 @@
 package de.tron.message;
 
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Message {
 
 	private int id = -1;
 	
 	private MessageType type;
-	private MovementDirection direction;
+	private MovementDirection move;
 	
-	private Set<Coordinates> updatedCoordinates;
+	private final List<Coordinate> updatedCoordinates = new ArrayList<>();
 
 	public int getId() {
 		return id;
@@ -27,21 +28,16 @@ public class Message {
 		this.type = type;
 	}
 
-	public MovementDirection getDirection() {
-		return direction;
+	public MovementDirection getMove() {
+		return move;
 	}
 
-	public void setDirection(MovementDirection direction) {
-		this.direction = direction;
+	public void setMove(MovementDirection move) {
+		this.move = move;
 	}
 
-	public Set<Coordinates> getUpdatedCoordinates() {
+	public List<Coordinate> getUpdatedCoordinates() {
 		return updatedCoordinates;
 	}
 
-	public void setUpdatedCoordinates(Set<Coordinates> updatedCoordinates) {
-		this.updatedCoordinates = updatedCoordinates;
-	}
-	
-	
 }

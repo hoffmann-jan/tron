@@ -1,6 +1,6 @@
 package de.tron.message;
 
-public class Coordinates {
+public class Coordinate {
 
 	private int playerId;
 	private int x;
