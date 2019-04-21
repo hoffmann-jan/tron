@@ -1,6 +1,6 @@
-package de.tron.message;
+package de.tron.model.bike;
 
-public class Coordinates {
+public class Coordinate {
 
 	private int playerId;
 	private int x;
