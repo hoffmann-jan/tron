@@ -10,7 +10,7 @@ public class View {
 	private Canvas field;
 	
 	@FXML 
-	private void changeDirection(KeyEvent event) {
+	private void changeDirection(KeyEvent event) {		
 		switch (event.getCode()) {
 		case W:
 			System.out.println("UP");
