@@ -12,6 +12,8 @@ import de.tron.client_java.network.NetworkController;
 import de.tron.client_java.network.message.Coordinate;
 import de.tron.client_java.network.message.Message;
 import de.tron.client_java.network.message.MessageType;
+import de.tron.client_java.network.message.MovementDirection;
+import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 
 public class ViewModel implements Processor<Message, GuiMessage> {
@@ -113,6 +115,30 @@ public class ViewModel implements Processor<Message, GuiMessage> {
 	
 	private void publishMessage(GuiMessage message) {
 		this.publisher.offer(message, ViewModel.OFFER_TIMEOUT, TimeUnit.MILLISECONDS, null);		
+	}
+
+	public void changeDirection(KeyCode code) {
+		MovementDirection direction = null;
+		switch (code) {
+			case W:
+				direction = MovementDirection.UP;
+				break;
+			case D:
+				direction = MovementDirection.RIGHT;
+				break;
+			case S:
+				direction = MovementDirection.DOWN;
+				break;
+			case A:
+				direction = MovementDirection.LEFT;
+				break;
+			case SPACE:
+				direction = MovementDirection.JUMP;
+				break;
+			default:
+				return;	
+			}
+		this.controller.sendDirectionChangeMessage(direction);
 	}
 
 }

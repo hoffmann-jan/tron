@@ -25,24 +25,8 @@ public class View implements Subscriber<GuiMessage> {
 		this.viewModel.subscribe(this);
 	}
 	
-	@FXML 
-	private void changeDirection(KeyEvent event) {	
-		switch (event.getCode()) {
-			case W:
-				System.out.println("UP");
-				break;
-			case D:
-				System.out.println("RIGHT");
-				break;
-			case S:
-				System.out.println("DOWN");
-				break;
-			case A:
-				System.out.println("LEFT");
-				break;
-			default:
-				break;
-		}
+	public void changeDirection(KeyEvent event) {	
+		this.viewModel.changeDirection(event.getCode());
 	}
 
 	@Override

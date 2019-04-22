@@ -11,6 +11,7 @@ import java.util.concurrent.ForkJoinPool;
 
 import de.tron.client_java.network.message.Message;
 import de.tron.client_java.network.message.MessageType;
+import de.tron.client_java.network.message.MovementDirection;
 import de.tron.client_java.network.message.converter.JsonMessageConverter;
 
 public class NetworkController implements AutoCloseable {
@@ -39,7 +40,7 @@ public class NetworkController implements AutoCloseable {
 	public void connect(String ip, int port) throws IOException {
 		this.connection = new Socket(ip, port);
 		this.input = new Scanner(connection.getInputStream());
-		this.output = new PrintWriter(this.connection.getOutputStream());
+		this.output = new PrintWriter(this.connection.getOutputStream(), true);
 		
 		Thread receiver = new Thread(this::receiveAndPublish);
 		receiver.setDaemon(true);
@@ -53,7 +54,14 @@ public class NetworkController implements AutoCloseable {
 		this.connection.close();
 	}
 	
-	public void sendMessage(Message message) {
+	public void sendDirectionChangeMessage(MovementDirection direction) {
+		Message message = new Message();
+		message.setType(MessageType.MOVE);
+		message.setMove(direction);
+		sendMessage(message);
+	}
+	
+	private void sendMessage(Message message) {
 		JsonMessageConverter converter = new JsonMessageConverter();
 		String messageString = converter.serialize(message);
 		this.output.println(messageString);
@@ -73,7 +81,6 @@ public class NetworkController implements AutoCloseable {
 	private Message receiveMessage() {
 		JsonMessageConverter converter = new JsonMessageConverter();
 		String messageStr = this.input.next();
-		System.out.println(messageStr);
 		return converter.deserialize(messageStr);
 	}
 	

@@ -58,11 +58,11 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	
 	private void addMoveIfNotNull(MovementDirection move, JsonObject root) {
 		if (move != null) {
-			root.addProperty(TYPE, move.getIndex());
+			root.addProperty(MOVE, move.getIndex());
 		}
 	}
 	
-	private void addAllCoordinates(Message src, JsonObject root) {
+	private void addAllCoordinates(Message src, JsonObject root) {		
 		JsonArray coordinates = new JsonArray();
 		for (Coordinate coordinate : src.getUpdatedCoordinates()) {
 			JsonObject jsonCoordinate = new JsonObject();
@@ -71,7 +71,9 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 			jsonCoordinate.addProperty(COORDINATE_Y, coordinate.getY());
 			coordinates.add(jsonCoordinate);
 		}
-		root.add(COORDINATES, coordinates);
+		if (coordinates.size() > 0) {
+			root.add(COORDINATES, coordinates);
+		}
 	}
 	
 	public Message deserialize(String jsonString) {

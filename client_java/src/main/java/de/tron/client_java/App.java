@@ -8,27 +8,28 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
+import de.tron.client_java.gui.View;
+
 /**
  * JavaFX App
  */
 public class App extends Application {
 
-    private static Scene scene;
-
     @Override
     public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("Window"));
-        stage.setScene(scene);
+    	FXMLLoader loader = new FXMLLoader(getClass().getResource("Window.fxml"));
+    	Parent root = loader.load();
+        Scene scene = new Scene(root, 520, 520);
+        
+        Object controller = loader.getController();
+        
+        if (controller instanceof View) {
+        	scene.setOnKeyPressed(((View) controller)::changeDirection);
+        }
+        
+        stage.setTitle("Tron-Game");
+        stage.setScene(scene);     
         stage.show();
-    }
-
-    static void setRoot(String fxml) throws IOException {
-        scene.setRoot(loadFXML(fxml));
-    }
-
-    private static Parent loadFXML(String fxml) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
-        return fxmlLoader.load();
     }
 
     public static void main(String[] args) {
