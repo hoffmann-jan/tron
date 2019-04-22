@@ -5,14 +5,19 @@ using System.Text;
 namespace Server.Messages
 {
     /// <summary>
-    /// S-->--C.
+    /// S--<--C.
     /// </summary>
-    public struct ServerMessage
+    public struct ClientMessage
     {
+        /// <summary>
+        /// PlayerId.
+        /// </summary>
+        public int id;
+
         /// <summary>
         /// Kind of message.
         /// </summary>
-        enum Type
+        public enum Type
         {
             TYPE_CONNECT = 0,  // S <-> C: Request (C) / accept (S) connection, server sends player his id
             TYPE_DISCONNECT = 1,  // S <-> C: Disconnect (C, S) connection
@@ -23,27 +28,15 @@ namespace Server.Messages
         }
 
         /// <summary>
-        /// Coordinates as array size of 4.
+        /// Direction.
         /// </summary>
-        Coordinates[] coordinates;
-
-        /// <summary>
-        /// Game field size. DEBUG 500x500.
-        /// </summary>
-        struct Field
+        public enum Move
         {
-            int heigth;
-            int width;
+            MOVE_UP = 0,
+            MOVE_DOWN = 1,
+            MOVE_LEFT = 2,
+            MOVE_RIGHT = 3,
+            MOVE_JUMP = 4
         }
     }
-
-    /// <summary>
-    /// Coordniates.
-    /// </summary>
-    //struct Coordinates
-    //{
-    //    int id;
-    //    int x;
-    //    int y;
-    //}
 }

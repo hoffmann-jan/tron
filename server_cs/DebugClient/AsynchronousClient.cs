@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Text;
 
+using Newtonsoft.Json;
 using DebugProperties;
+using Server;
+using System.Collections.Generic;
 
 // State object for receiving data from remote device.  
 public class StateObject
@@ -24,10 +28,7 @@ public class AsynchronousClient
     // ManualResetEvent instances signal completion.  
     private static ManualResetEvent _ConnectDone = new ManualResetEvent(false);
     private static ManualResetEvent _SendDone = new ManualResetEvent(false);
-    private static ManualResetEvent _ReceiveDone = new ManualResetEvent(false);
-
-    // The response from the remote device.  
-    private static string response = string.Empty;
+    public static ManualResetEvent ReceiveDone = new ManualResetEvent(false);
 
     public static Socket Connect(IPAddress iPAddress, int port)
     {
@@ -53,8 +54,7 @@ public class AsynchronousClient
             IPEndPoint remoteEP = new IPEndPoint(ipAddress, Globals.Port);
 
             // Create a TCP/IP socket.  
-            Socket client = new Socket(ipAddress.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp);
+            Socket client = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
             // Connect to the remote endpoint.  
             client.BeginConnect(remoteEP,
@@ -67,10 +67,7 @@ public class AsynchronousClient
 
             // Receive the response from the remote device.  
             Receive(client);
-            _ReceiveDone.WaitOne();
-
-            // Write the response to the console.  
-            Console.WriteLine($"Response received : {response}");
+            ReceiveDone.WaitOne();
 
             // Release the socket.  
             client.Shutdown(SocketShutdown.Both);
@@ -113,8 +110,7 @@ public class AsynchronousClient
             state.WorkSocket = client;
 
             // Begin receiving the data from the remote device.  
-            client.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
-                new AsyncCallback(ReceiveCallback), state);
+            client.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);            
         }
         catch (Exception e)
         {
@@ -134,25 +130,22 @@ public class AsynchronousClient
             // Read data from the remote device.  
             int bytesRead = client.EndReceive(ar);
 
-            if (bytesRead > 0)
-            {
-                // There might be more data, so store the data received so far.  
-                state.StringBuilder.Append(Encoding.ASCII.GetString(state.Buffer, 0, bytesRead));
+            // There might be more data, so store the data received so far.  
+            state.StringBuilder.Append(Encoding.UTF8.GetString(state.Buffer, 0, bytesRead));
 
-                // Get the rest of the data.  
-                client.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReceiveCallback), state);
-            }
-            else
+            // Signal that all bytes have been received.  
+            ReceiveDone.Set();
+
+            // Remove EOF tag.
+            state.StringBuilder.Replace(Globals.EofTag, string.Empty);
+
+            // All the data has arrived; put it in response.  
+            if (state.StringBuilder.Length > 1)
             {
-                // All the data has arrived; put it in response.  
-                if (state.StringBuilder.Length > 1)
-                {
-                    response = state.StringBuilder.ToString();
-                }
-                // Signal that all bytes have been received.  
-                _ReceiveDone.Set();
+                Message message = JsonConvert.DeserializeObject<List<Message>>(state.StringBuilder.ToString()).FirstOrDefault();
+                Console.WriteLine($"Coords: x:{message.coordinates.x} y:{message.coordinates.y}");
             }
+
         }
         catch (Exception e)
         {
@@ -160,7 +153,7 @@ public class AsynchronousClient
         }
     }
 
-    public static void Send(Socket client, String data)
+    public static void Send(Socket client, string data)
     {
         // Convert the string data to byte data using ASCII encoding.  
         byte[] byteData = Encoding.ASCII.GetBytes(data);

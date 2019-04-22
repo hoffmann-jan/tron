@@ -1,7 +1,5 @@
 ﻿using Server.Enum;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Server.Messages;
 
 namespace Server.Logic
 {
@@ -12,7 +10,10 @@ namespace Server.Logic
     {
         #region fields
         private readonly int _Id;
-        private Messages.ClientMessage.Move _Direction = Messages.ClientMessage.Move.MOVE_RIGHT;
+        private bool _Jump;
+        private Coordinates _Coordinates;
+        private Move _Direction;
+        private StartPosition _StartPosition;
         #endregion
 
         #region properties
@@ -20,40 +21,38 @@ namespace Server.Logic
         /// Player Id.
         /// </summary>
         public int Id { get => _Id; }
+        /// <summary>
+        /// Player jumping.
+        /// </summary>
+        public bool Jump { get => _Jump; set => _Jump = value; }
+        /// <summary>
+        /// Coordinates.
+        /// </summary>
+        public Coordinates Coordinates { get => _Coordinates; set => _Coordinates = value; }
+        /// <summary>
+        /// Direction.
+        /// </summary>
+        public Move Direction { get => _Direction; set => _Direction = value; }
+        /// <summary>
+        /// Start position.
+        /// </summary>
+        public StartPosition StartPosition { get => _StartPosition; set => _StartPosition = value; }
         #endregion
 
         #region ctor
         /// <summary>
-        /// Empty ctor.
+        /// Ctor.
         /// </summary>
-        public TronPlayer(int id, ref FieldInformation[,] gameField)
+        public TronPlayer(int id, Move direction = Move.MOVE_RIGHT, StartPosition startPosition = StartPosition.left)
         {
             _Id = id;
+            _Direction = direction;
+            _StartPosition = startPosition;
         }
         #endregion
 
         #region public functions
-        public bool DetectCollision(TronPlayer other)
-        {
-            bool result = false;
-            return result;
-        }
 
-        public bool DetectCollision(TronPlayer[] others)
-        {
-            bool result = false;
-            foreach(TronPlayer player in others)
-            {
-                if (DetectCollision(player))
-                    return !result;
-            }
-            return result;
-        }
-
-        public void Move()
-        {
-
-        }
         #endregion
 
         #region private functions
@@ -64,11 +63,11 @@ namespace Server.Logic
     /// <summary>
     /// Player start position.
     /// </summary>
-    public enum Startposition
+    public enum StartPosition
     {
-        left,
-        right,
-        top,
-        bottom
+        left = 0,
+        right = 1,
+        top = 2,
+        bottom = 3
     }
 }

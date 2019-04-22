@@ -64,7 +64,7 @@ namespace DebugClient
             else
                 Console.WriteLine("1 - Connect");
             if (_TcpIpConnected)
-                Console.WriteLine("2 - Send string");
+                Console.WriteLine("2 - Send Message");
             Console.WriteLine();
             Console.WriteLine("q - Quit");
 
@@ -106,8 +106,8 @@ namespace DebugClient
             Console.WriteLine("Sending message..");
             AsynchronousClient.Send(_TcpClient, message);
             Console.WriteLine("Sended.");
-            Console.WriteLine("Wait for resopnse.");
-            AsynchronousClient.Receive(_TcpClient);
+            //Console.WriteLine("Wait for resopnse.");
+            //AsynchronousClient.Receive(_TcpClient);
             Console.WriteLine("Press any key to continue..");
             Console.ReadKey();
 
@@ -128,22 +128,31 @@ namespace DebugClient
             Console.WriteLine();
             Console.WriteLine("q - Main Menu");
 
-            while (true)
+            NextMenu result = NextMenu.None;
+            while (result == NextMenu.None)
             {
                 ConsoleKeyInfo keyInfo = Console.ReadKey();
                 if (keyInfo.Key == ConsoleKey.Q)
-                    return NextMenu.Main;
+                    result = NextMenu.Main;
                 else if (keyInfo.Key == ConsoleKey.D1)
                 {
                     Connect(IPAddress.Parse(Globals.IP), Globals.Port);
-                    return NextMenu.Main;
+                    result = NextMenu.Main;
                 }
                 else if (keyInfo.Key == ConsoleKey.D2)
                 {
                     Connect();
-                    return NextMenu.Main;
+                    result = NextMenu.Main;
                 }
             }
+
+            Console.WriteLine("Wait for resopnse.");
+            while (true)
+            {
+                AsynchronousClient.Receive(_TcpClient);
+                AsynchronousClient.ReceiveDone.WaitOne();
+            }
+            return result;
         }
 
         private static void Connect()
@@ -195,7 +204,8 @@ namespace DebugClient
         Main,
         DisConnectTcp,
         ConnectTo,
-        SendMessage
+        SendMessage,
+        None
     }
     #endregion
 }

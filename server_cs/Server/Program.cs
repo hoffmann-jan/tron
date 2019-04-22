@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Net;
 
 using DebugProperties;
 
@@ -16,12 +12,12 @@ namespace Server
         public static int Main(string[] args)
         {
 #if DEBUG
-            IPAddress ipAddress = IPAddress.Loopback;
+            IPAddress ipAddress = IPAddress.Parse(Globals.IP);
             int port = Globals.Port;
 #else
             try
             {
-            string[] ipPort = args.Splitt(':');
+            string[] ipPort = args[0].Splitt(':');
             IPAddress ipAddress = IPAdress.Parse(ipPort[0]);
             int port = Convert.ToInt32(ipPort[1]);
             }
@@ -36,7 +32,7 @@ namespace Server
 #endif
 
             // Start the Server
-            AsynchronousSocketListener.StartListening(ipAddress, port);
+            TronServer.StartTronServer(ipAddress, port);
             return 0;
         }
     }
