@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.canvas.Canvas?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.tron.client_java.gui.View">
+	<center>
+		<Canvas width="500" height="500" fx:id="field">
+		</Canvas>
+	</center>
+</BorderPane>
+
