@@ -1,7 +1,11 @@
 # Server
 
 * tcp/ip
-.. beta version with some bugs ..
+* .. beta version with some bugs ..
+
+## Server Configuration
+
+* ..
 
 ## Start the server
 
