@@ -1,19 +1,22 @@
-#include <SFML/Graphics.hpp>
+#include <memory>
+
+#include "client.h"
 
 int main()
 {
-    sf::Window window(sf::VideoMode(800, 600), "Tron C++ Client", sf::Style::Default);
+    std::make_shared<Client>()->run();
 
-    window.setActive();
-
-    while (window.isOpen())
-    {
-        sf::Event event;  
-        while (window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-                window.close();  
-        }
-    }
     return 0;
+
+    //sf::TcpSocket socket;
+    //sf::Socket::Status status = socket.connect("10.202.134.229", 4321);
+    //if (status == sf::Socket::Status::Done)
+    //{
+    //    std::size_t received;
+    //    char data[1000];
+    //    if (socket.receive(data, 1000, received) == sf::Socket::Done)
+    //    {
+
+    //    }
+    //}
 }

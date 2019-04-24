@@ -3,25 +3,11 @@
 #include <string>
 #include <vector>
 
-struct Position
-{
-    int x;         // Player x coordinate
-    int y;         // Player y coordinate
-    bool jumping;  // Player jumping status
-};
+#include <nlohmann/json.hpp>
 
-// 1. TYPE_CONNECT: C -> S: (name, lobby id)
-// 2. TYPE_CONNECT: S -> C: (player id, color)
-// 3. TYPE_LOBBY: S -> C: inital lobby message (waiting players and their positions)
-// 3. or TYPE_ADD for waiting players: add new player (new player and position)
-// 4. TYPE_READY: C -> S
-// 5. TYPE_START: S -> C: clients start moving (initially to the middle)
-// 5. TYPE_UPDATE: S -> C: updated positions
-// 5. TYPE_ACTION: C -> S: Action (also sends player id)
-// 5. TYPE_DEAD: S -> C
-// 5. TYPE_DISCONNECT: C -> S, S -> C (sends player id)
-// 6. TYPE_RESULT: S -> C: sends winning player id
-// 7. TYPE_LOBBY: S -> C: Back to 3.
+#include "player.h"
+
+using json = nlohmann::json;
 
 enum Type
 {
@@ -46,15 +32,7 @@ enum Action
     ACT_JUMP  = 4
 };
 
-struct Player
-{
-    int id;
-    std::string name;
-    int color;
-    Position position;
-};
-
-struct Protocol
+struct Message
 {
     Type type;
     Action action;
@@ -64,3 +42,19 @@ struct Protocol
 
     std::vector<Player> players;
 };
+
+void to_json(json& j, const Message& m);
+void from_json(const json& j, Message& m);
+
+// 1. TYPE_CONNECT: C -> S: (name, lobby id)
+// 2. TYPE_CONNECT: S -> C: (player id, color)
+// 3. TYPE_LOBBY: S -> C: inital lobby message (waiting players and their positions)
+// 3. or TYPE_ADD for waiting players: add new player (new player and position)
+// 4. TYPE_READY: C -> S
+// 5. TYPE_START: S -> C: clients start moving (initially to the middle)
+// 5. TYPE_UPDATE: S -> C: updated positions
+// 5. TYPE_ACTION: C -> S: Action (also sends player id)
+// 5. TYPE_DEAD: S -> C
+// 5. TYPE_DISCONNECT: C -> S, S -> C (sends player id)
+// 6. TYPE_RESULT: S -> C: sends winning player id
+// 7. TYPE_LOBBY: S -> C: Back to 3.
