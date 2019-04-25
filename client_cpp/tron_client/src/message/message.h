@@ -46,8 +46,8 @@ struct Message
 void to_json(json& j, const Message& m);
 void from_json(const json& j, Message& m);
 
-// 1. TYPE_CONNECT: C -> S: (name, lobby id)
-// 2. TYPE_CONNECT: S -> C: (player id, color)
+// 1. TYPE_CONNECT: C -> S: (name, lobby id, color)
+// 2. TYPE_CONNECT: S -> C: (player id)
 // 3. TYPE_LOBBY: S -> C: inital lobby message (waiting players and their positions)
 // 3. or TYPE_ADD for waiting players: add new player (new player and position)
 // 4. TYPE_READY: C -> S

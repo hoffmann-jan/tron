@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 
 #include "messagequeue.h"
+#include "state.h"
 
 class Client
 {
@@ -13,15 +14,21 @@ public:
     void run();
 
 private:
-    void processMessage(const Message& message);
+    void processConnect(const Message& message);
+    void processLobby(const Message& message);
+    void processAdd(const Message& message);
+    void processStart(const Message& message);
+    void processUpdate(const Message& message);
+    void processDead(const Message& message);
 
     void renderConnect();
     void renderLobby();
     void renderGame();
 
     sf::Window window;
+    bool closed;
     
-    enum class State { Connect, Lobby, Game } state;
+    State state;
 
     MessageQueue queue;
     Message message;

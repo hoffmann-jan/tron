@@ -11,8 +11,8 @@ using json = nlohmann::json;
 struct Player
 {
     int id;
-    std::string name;
     int color;
+    std::string name;
     Position position;
 };
 

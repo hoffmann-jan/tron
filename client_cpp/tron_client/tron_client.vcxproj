@@ -153,8 +153,10 @@
     <ClCompile Include="src\message\message.cpp" />
     <ClCompile Include="src\message\player.cpp" />
     <ClCompile Include="src\message\position.cpp" />
+    <ClCompile Include="src\state.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\state.h" />
     <ClInclude Include="src\messagequeue.h" />
     <ClInclude Include="src\client.h" />
     <ClInclude Include="src\message\player.h" />
