@@ -11,18 +11,14 @@
 * broadcast
 
 ### Todo
-* apply new protocol
-* set broadcast speed to 30 fps
-* process player input
 * use config file to configure server
 * refine game logic
   + teleport player by passing border
-  + detect collisions
   * add game end
 * create lobby
 
 ### Debug Client Todo
-* add Connect procedure from protocol
+* add connect procedure from protocol
 * add support to send player messages (player input)
 
 ## Client Cpp
