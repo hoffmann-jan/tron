@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 
 using Server.Logic;
 using Server.Logic.Event;
+using Server.Protocol;
 
 namespace Server
 {
@@ -42,20 +43,10 @@ namespace Server
 
         public static void StartTronServer(IPAddress ipAddress, int port)
         {
-            StartListening(ipAddress, port);
-        }
-
-        private static void Game()
-        {
-            while (_Clients.Count == 0)
-            {
-                Thread.Sleep(1000);
-            }
-
-            Console.WriteLine("Starting new game.");
             Tron = new Tron(Convert.ToInt32(Properties.Resources.FieldSize));
             Tron.SnapshotCreated += Tron_SnapshotCreated;
-            Tron.StartGameLoop(_Clients.Keys.ToArray());
+            Tron.PlayerDied += Tron_PlayerDied;
+            StartListening(ipAddress, port);
         }
 
         /// <summary>
@@ -65,22 +56,16 @@ namespace Server
         private static void Tron_SnapshotCreated(SnapshotArguments s)
         {
             // Broadcast game information.
-            //Parallel.ForEach(_Clients, (keyValuePair) =>
-            //{
-            //    int playerId = keyValuePair.Key;
-            //    ClientInfo client = keyValuePair.Value;
+            Broadcast(s.Protocol);
+        }
 
-            //    Send(client.StateObject.WorkSocket, data);
-            //});
-            foreach (KeyValuePair<int, ClientInfo> keyValuePair in _Clients)
-            {
-                int playerId = keyValuePair.Key;
-                ClientInfo client = keyValuePair.Value;
+        private static void Tron_PlayerDied(DeathArgument d)
+        {
+            Protocol.Protocol protocol = new Protocol.Protocol();
+            protocol.Type = Protocol.Type.TYPE_DEAD;
+            // Todo: id des toten spielers übermitteln
 
-                string data = JsonConvert.SerializeObject(s.Messages.Where(m => m.id == playerId), typeof(Message), Formatting.None, new JsonSerializerSettings());
-
-                Send(client.StateObject.WorkSocket, string.Concat(data, Properties.Resources.EndOfFileTag));
-            }
+            Broadcast(protocol);
         }
 
         /// <summary>
@@ -103,8 +88,6 @@ namespace Server
                 listener.Listen(100);
 
                 Console.WriteLine($"Server listening on {ipAddress}:{port}.");
-
-                Task.Run(() => Game());
 
                 while (true)
                 {
@@ -149,11 +132,7 @@ namespace Server
             StateObject state = new StateObject();
             state.WorkSocket = handler;
 
-            // Add client to list.
-            ClientInfo clientInfo = new ClientInfo(state, GetNextPlayerId());
-            _Clients.TryAdd(clientInfo.PlayerId, clientInfo);
-
-            //handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
+            handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
         }
 
         /// <summary>
@@ -186,16 +165,68 @@ namespace Server
                 if (content.IndexOf("<EOF>", StringComparison.InvariantCulture) > -1)
                 {
                     // Get message from data.
-                    Message message = JsonConvert.DeserializeObject<Message>(content.ToString());
+                    Protocol.Protocol protocol = JsonConvert.DeserializeObject<Protocol.Protocol>(content.ToString());
 
-                    // All the data has been read from the client. Display it on the console.
-                    Console.WriteLine($"Read {content.Length} bytes from socket.{Environment.NewLine}Data : {message}");
+                    if (protocol == null)
+                    {
+                        Console.Error.WriteLine("Can not read the protocol!");
+                        return;
+                    }
 
-                    // Process message
-                    Tron.ProcessInput(message);
+                    switch (protocol.Type)
+                    {
+                        case Protocol.Type.TYPE_CONNECT:
+                            // Add client to list.
+                            ClientInfo clientInfo = new ClientInfo(state, GetNextPlayerId(), protocol.Players.First().Name, protocol.LobbyId);
+                            clientInfo.Color = 123; //TODO: COLOR als int???
+                            if (!_Clients.TryAdd(clientInfo.PlayerId, clientInfo))
+                                return;
 
-                    //// Echo the data back to the client.
-                    //Send(handler, content);
+                            // Init player
+                            Console.WriteLine($"Player:{protocol.Players.First().Name} joined.");
+                            Player player = new Player();
+                            player.Id = clientInfo.PlayerId;
+                            player.Color = clientInfo.Color;
+                            player.Name = protocol.Players.First().Name;
+                            Tron.RegisterPlayer(player);
+                            protocol.Players = new List<Player>();
+                            protocol.Players.Add(player);
+                            protocol.Type = Protocol.Type.TYPE_CONNECT;
+
+                            // Send inital game information to client.
+                            Send(handler, protocol);
+
+                            // TODO: LOBBY
+
+
+                            break;
+
+                        case Protocol.Type.TYPE_ACTION:
+                            // Process action
+                            Tron.ProcessInput(protocol);
+                            break;
+
+                        case Protocol.Type.TYPE_READY:
+                            // When all rdy, then start the game
+                            if (_Clients.Any(c => c.Value.Ready != true))
+                                break;
+
+                            Tron.StartGameLoop();
+                            break;
+
+                        case Protocol.Type.TYPE_DISCONNECT:
+                            break;
+
+                        case Protocol.Type.TYPE_ADD:
+                        case Protocol.Type.TYPE_DEAD:
+                        case Protocol.Type.TYPE_LOBBY:
+                        case Protocol.Type.TYPE_RESULT:
+                        case Protocol.Type.TYPE_START:
+                        case Protocol.Type.TYPE_UPDATE:
+                        default:
+                            Console.Error.WriteLine("Invaild protocol message recieved!");
+                            break;
+                    }
                 }
                 else
                 {
@@ -205,9 +236,26 @@ namespace Server
             }
         }
 
-        private static void Send(Socket handler, string data)
+        /// <summary>
+        /// Broadcast protocol.
+        /// </summary>
+        /// <param name="protocol">protocol</param>
+        private static void Broadcast(Protocol.Protocol protocol)
+        {
+            foreach (var client in _Clients)
+            {
+                Send(client.Value.StateObject.WorkSocket, protocol);
+            }
+        }
+
+        private static void Send(Socket handler, Protocol.Protocol protocol)
         {
             SendDone.Reset();
+
+            string data = JsonConvert.SerializeObject(protocol, typeof(Protocol.Protocol), Formatting.None, new JsonSerializerSettings());
+
+            data = string.Concat(data, Properties.Resources.EndOfFileTag);
+
             // Convert the string data to byte data using ASCII encoding.
             byte[] byteData = Encoding.UTF8.GetBytes(data);
 

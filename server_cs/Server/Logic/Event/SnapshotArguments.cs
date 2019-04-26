@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Server.Logic.Event
 {
@@ -8,13 +7,13 @@ namespace Server.Logic.Event
     /// </summary>
     public class SnapshotArguments : EventArgs
     {
-        private List<Message> _Messages;
+        private Protocol.Protocol _Protocol;
 
-        public List<Message> Messages { get => _Messages; }
+        public Protocol.Protocol Protocol { get => _Protocol; }
 
-        public SnapshotArguments()
+        public SnapshotArguments(Protocol.Protocol protocol)
         {
-            _Messages = new List<Message>();
+            _Protocol = protocol;
         }
     }
 }

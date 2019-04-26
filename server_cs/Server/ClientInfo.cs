@@ -14,6 +14,10 @@ namespace Server
         #endregion
 
         #region Properties
+        public bool Ready { get; set; }
+        public int LobbyId { get; set; }
+        public int Color { get; set; }
+        public string Name { get; set; }
         /// <summary>
         /// Player Id.
         /// </summary>
@@ -28,10 +32,12 @@ namespace Server
         /// <summary>
         /// Constructor
         /// </summary>
-        public ClientInfo(StateObject client, int playerId)
+        public ClientInfo(StateObject client, int playerId, string name, int lobbyId)
         {
             _PlayerId = playerId;
             _StateObject = client;
+            LobbyId = lobbyId;
+            Name = name;
         }
         #endregion
 
