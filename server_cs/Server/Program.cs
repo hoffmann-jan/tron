@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Net;
 using Newtonsoft.Json;
 
@@ -11,20 +12,24 @@ namespace Server
         // *DEBUG* Use Globals for configuration.
         public static int Main(string[] args)
         {
+            IPAddress ipAddress;
+            int port;
 #if DEBUG
-            IPAddress ipAddress = IPAddress.Parse(Globals.IP);
-            int port = Globals.Port;
+            ipAddress = IPAddress.Parse(Globals.IP);
+            port = Globals.Port;
 #else
             try
             {
                 string path = Path.Combine(Directory.GetCurrentDirectory(), "AppConfig.json");
                 string file = File.ReadAllText(path);
                 dynamic config = JsonConvert.DeserializeObject(file);
-                Globals.BufferSize = config.BufferSize;
                 Globals.EofTag = config.EofTag;
                 Globals.IP = config.IP;
                 Globals.NumberOfPlayers = config.NumberOfPlayers;
                 Globals.Port = config.Port;
+
+                ipAddress = IPAddress.Parse(Globals.IP);
+                port = Globals.Port;
             }
             catch (Exception exception)
             {
@@ -35,7 +40,6 @@ namespace Server
                 return -1;
             }
 #endif
-
             // Start the Server
             TronServer.StartTronServer(ipAddress, port);
             return 0;
