@@ -1,14 +1,14 @@
-﻿using System.Net;
-
-using DebugProperties;
+﻿using System.IO;
+using System.Net;
+using Newtonsoft.Json;
 
 namespace Server
 {
     class Program
     {
         // Main function
-        // *PRODUCTION* Arguments example '0.0.0.0:2132'.
-        // *DEBUG* Use DebugProperties project for configuration.
+        // *PRODUCTION* Use config file.
+        // *DEBUG* Use Globals for configuration.
         public static int Main(string[] args)
         {
 #if DEBUG
@@ -17,9 +17,14 @@ namespace Server
 #else
             try
             {
-            string[] ipPort = args[0].Splitt(':');
-            IPAddress ipAddress = IPAdress.Parse(ipPort[0]);
-            int port = Convert.ToInt32(ipPort[1]);
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "AppConfig.json");
+                string file = File.ReadAllText(path);
+                dynamic config = JsonConvert.DeserializeObject(file);
+                Globals.BufferSize = config.BufferSize;
+                Globals.EofTag = config.EofTag;
+                Globals.IP = config.IP;
+                Globals.NumberOfPlayers = config.NumberOfPlayers;
+                Globals.Port = config.Port;
             }
             catch (Exception exception)
             {

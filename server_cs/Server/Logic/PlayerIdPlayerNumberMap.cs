@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Server.Logic
+﻿namespace Server.Logic
 {
     /// <summary>
     /// Maps player id to enum number.

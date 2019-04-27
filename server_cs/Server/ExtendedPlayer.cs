@@ -11,6 +11,7 @@ namespace Server
         public Point LastJump { get; set; }
         public bool JumpCooldown { get; set; }
         public bool Death { get; set; }
+        public int Length { get; set; }
 
         public ExtendedPlayer(Player player)
         {

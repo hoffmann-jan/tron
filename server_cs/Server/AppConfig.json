@@ -1,0 +1,7 @@
+﻿{
+  "IP": "127.0.0.1",
+  "Port": 4321,
+  "NumberOfPlayers": 2,
+  "BufferSize": "256",
+  "EofTag": "<EOF>"
+}

@@ -6,9 +6,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
 
+using Newtonsoft.Json;
 using Server.Logic;
 using Server.Logic.Event;
 using Server.Protocol;
@@ -46,7 +45,18 @@ namespace Server
             Tron = new Tron(Convert.ToInt32(Properties.Resources.FieldSize));
             Tron.SnapshotCreated += Tron_SnapshotCreated;
             Tron.PlayerDied += Tron_PlayerDied;
+            Tron.GameEnded += Tron_GameEnded;
             StartListening(ipAddress, port);
+        }
+
+        private static void Tron_GameEnded(GameEndedArguments g)
+        {
+            Protocol.Protocol protocol = new Protocol.Protocol();
+            protocol.Type = Protocol.Type.TYPE_RESULT;
+            // Todo: id des gewinners übermitteln
+            protocol.LobbyId = g.Id;
+
+            Broadcast(protocol);
         }
 
         /// <summary>
@@ -59,11 +69,12 @@ namespace Server
             Broadcast(s.Protocol);
         }
 
-        private static void Tron_PlayerDied(DeathArgument d)
+        private static void Tron_PlayerDied(DeathArguments d)
         {
             Protocol.Protocol protocol = new Protocol.Protocol();
             protocol.Type = Protocol.Type.TYPE_DEAD;
             // Todo: id des toten spielers übermitteln
+            protocol.LobbyId = d.Id;
 
             Broadcast(protocol);
         }
@@ -132,7 +143,14 @@ namespace Server
             StateObject state = new StateObject();
             state.WorkSocket = handler;
 
-            handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
+            try
+            {
+                handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
+            }
+            catch
+            {
+                Console.Error.WriteLine("Lost connection to client.");
+            }
         }
 
         /// <summary>
@@ -215,6 +233,15 @@ namespace Server
                             break;
 
                         case Protocol.Type.TYPE_DISCONNECT:
+                            // Remove client from active client list.
+                            KeyValuePair<int, ClientInfo> kvc = _Clients.FirstOrDefault(kv => kv.Value.StateObject.WorkSocket.Equals(handler));
+                            if (kvc.Value != null)
+                            {
+                                _Clients.TryRemove(kvc.Key, out var info);
+                            }
+
+                            handler.Shutdown(SocketShutdown.Both);
+                            handler.Close();
                             break;
 
                         case Protocol.Type.TYPE_ADD:
@@ -277,17 +304,9 @@ namespace Server
 
                 // Complete sending the data to the remote device.
                 int bytesSent = handler.EndSend(asyncResult);
+#if DEBUG
                 Console.WriteLine($"Sent {bytesSent} bytes to client.");
-
-                //// Remove client from active client list.
-                //KeyValuePair<int, ClientInfo> kvc =_Clients.FirstOrDefault(kv => kv.Value.StateObject.WorkSocket.Equals(handler));
-                //if (kvc.Value != null)
-                //{
-                //    _Clients.TryRemove(kvc.Key, out var info);
-                //}
-
-                //handler.Shutdown(SocketShutdown.Both);
-                //handler.Close();
+#endif
             }
             catch (Exception exception)
             {

@@ -34,8 +34,8 @@ namespace Server.Protocol
 
     public class Position
     {
-        public int X { get; set; }        // Player x coordinate
-        public int Y { get; set; }        // Player y coordinate
+        public double X { get; set; }        // Player x coordinate
+        public double Y { get; set; }        // Player y coordinate
         public bool Jumping { get; set; } // Player jumping status
     }
 

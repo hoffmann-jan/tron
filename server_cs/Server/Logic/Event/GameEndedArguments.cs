@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Server.Logic.Event
 {
-    public class DeathArgument : EventArgs
+    public class GameEndedArguments : EventArgs
     {
         private int _Id;
 
         public int Id { get => _Id; }
 
-        public DeathArgument(int id)
+        public GameEndedArguments(int id)
         {
             _Id = id;
         }

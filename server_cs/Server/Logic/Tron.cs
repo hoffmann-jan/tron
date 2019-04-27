@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 
 using Server.Enum;
 using Server.Logic.Event;
-using System;
 using Server.Protocol;
 
 namespace Server.Logic
@@ -65,34 +65,34 @@ namespace Server.Logic
         {
             ExtendedPlayer extendedPlayer = new ExtendedPlayer(player);
             Position position = new Position();
-            int halfSize = _FliedSize / 2;
+            double halfSize = _FliedSize / 2;
             switch (_Starter)
             {
                 case 0:
                     position.X = halfSize;
                     position.Y = 0;
-                    _GameField[0, halfSize] = FieldInformation.Player1;
+                    _GameField[0, (int)halfSize] = FieldInformation.Player1;
                     _Map.Player1 = player.Id;
                     extendedPlayer.Direction = Direction.Up;
                     break;
                 case 1:
                     position.X = 0;
                     position.Y = halfSize;
-                    _GameField[0, halfSize] = FieldInformation.Player2;
+                    _GameField[0, (int)halfSize] = FieldInformation.Player2;
                     _Map.Player2 = player.Id;
                     extendedPlayer.Direction = Direction.Right;
                     break;
                 case 2:
                     position.X = _FliedSize;
                     position.Y = halfSize;
-                    _GameField[0, halfSize] = FieldInformation.Player3;
+                    _GameField[0, (int)halfSize] = FieldInformation.Player3;
                     _Map.Player3 = player.Id;
                     extendedPlayer.Direction = Direction.Left;
                     break;
                 case 3:
                     position.X = halfSize;
                     position.Y = _FliedSize;
-                    _GameField[0, halfSize] = FieldInformation.Player4;
+                    _GameField[0, (int)halfSize] = FieldInformation.Player4;
                     _Map.Player4 = player.Id;
                     extendedPlayer.Direction = Direction.Down;
                     break;
@@ -129,6 +129,8 @@ namespace Server.Logic
                     player.Direction = Direction.Down;
                     break;
                 case Protocol.Action.ACT_JUMP:
+                    if (player.JumpCooldown)
+                        break;
                     player.Player.Position.Jumping = true;
                     break;
                 case Protocol.Action.ACT_LEFT:
@@ -212,9 +214,18 @@ namespace Server.Logic
                     Thread.Sleep(10);
                 }
                 Update(elapsed);
+                end = CheckGameEnd();
                 Broadcast();
             }
 
+            int winner = 0;
+            var lastManStanding = _Players.FirstOrDefault(p => p.Death == false);
+            if (lastManStanding != null)
+                winner = lastManStanding.Player.Id;
+            else
+                winner = _Players.First(ep => ep.Length ==_Players.Select(p => p.Length).Max()).Player.Id;
+
+            GameEnded?.Invoke(new GameEndedArguments(winner));
         }
 
         private void Update(double deltaTime)
@@ -226,36 +237,55 @@ namespace Server.Logic
             // Detect collisions and register postion
             foreach (ExtendedPlayer player in _Players)
             {
-                Draw(player);
+                DrawInternalGameField(player);
             }
+
         }
 
-        private void Draw(ExtendedPlayer player)
+        private bool CheckGameEnd()
+        {
+            var actives = _Players.Where(p => p.Death == false);
+            if (actives.Count() <= 1)
+            {
+                // game end == true
+                return true;
+            }
+            return false;
+        }
+
+        private void DrawInternalGameField(ExtendedPlayer player)
         {
             switch (_GameField[(int)player.Player.Position.X, (int)player.Player.Position.Y])
             {
                 case FieldInformation.Empty:
                     _GameField[(int)player.Player.Position.X, (int)player.Player.Position.Y] = GetPlayerById(player.Player.Id);
+                    player.Length++;
                     break;
 
                 case FieldInformation.Player1:
                     if (GetPlayerById(player.Player.Id) != FieldInformation.Player1)
-                        IAmKilled(player.Player.Id);
+                    {
+                        if (!Jumping(player))
+                            IAmKilled(player.Player.Id);
+                    }
                     break;
 
                 case FieldInformation.Player2:
                     if (GetPlayerById(player.Player.Id) != FieldInformation.Player2)
-                        IAmKilled(player.Player.Id);
+                        if (!Jumping(player))
+                            IAmKilled(player.Player.Id);
                     break;
 
                 case FieldInformation.Player3:
                     if (GetPlayerById(player.Player.Id) != FieldInformation.Player3)
-                        IAmKilled(player.Player.Id);
+                        if (!Jumping(player))
+                            IAmKilled(player.Player.Id);
                     break;
 
                 case FieldInformation.Player4:
                     if (GetPlayerById(player.Player.Id) != FieldInformation.Player4)
-                        IAmKilled(player.Player.Id);
+                        if (!Jumping(player))
+                            IAmKilled(player.Player.Id);
                     break;
 
                 case FieldInformation.PlayerSegment1:
@@ -263,16 +293,39 @@ namespace Server.Logic
                 case FieldInformation.PlayerSegment3:
                 case FieldInformation.PlayerSegment4:
                 case FieldInformation.Cross:
-                    IAmKilled(player.Player.Id);
+                    if (!Jumping(player))
+                        IAmKilled(player.Player.Id);
                     break;
             }
 
         }
 
+        private bool Jumping(ExtendedPlayer player)
+        {
+            if (player.Player.Position.Jumping)
+            {
+                player.Player.Position.Jumping = false;
+                player.LastJump = new Point((int)player.Player.Position.X, (int)player.Player.Position.Y);
+                player.JumpCooldown = true;
+                return true;
+            }
+            else if (player.LastJump.Equals(new Point((int)player.Player.Position.X, (int)player.Player.Position.Y)))
+            {
+                player.JumpCooldown = true;
+                return true;
+            }
+            else
+            {
+                player.JumpCooldown = false;
+                player.LastJump = new Point();
+                return false;
+            }
+        }
+
         private void IAmKilled(int id)
         {
             _Players.First(p => p.Player.Id == id).Death = true;
-            PlayerDied?.Invoke(new DeathArgument(id));
+            PlayerDied?.Invoke(new DeathArguments(id));
             RemoveFromGameField(GetPlayerById(id), GetPlayerSegemntById(id));
         }
 
@@ -298,23 +351,36 @@ namespace Server.Logic
                 switch (player.Direction)
                 {
                     case Direction.Down:
-                        newPosition.Y -= (int) (PlayerSpeed * deltaTime);
+                        newPosition.Y -= PlayerSpeed * deltaTime;
+                        newPosition.Y = Teleport(newPosition.Y);
                         break;
                     case Direction.Left:
-                        newPosition.Y -= (int)(PlayerSpeed * deltaTime);
+                        newPosition.X -= PlayerSpeed * deltaTime;
+                        newPosition.X = Teleport(newPosition.X);
                         break;
                     case Direction.Right:
-                        newPosition.X += (int)(PlayerSpeed * deltaTime);
+                        newPosition.X += PlayerSpeed * deltaTime;
+                        newPosition.X = Teleport(newPosition.X);
                         break;
                     case Direction.Up:
-                        newPosition.Y += (int)(PlayerSpeed * deltaTime);
+                        newPosition.Y += PlayerSpeed * deltaTime;
+                        newPosition.Y = Teleport(newPosition.Y);
                         break;
                 }
 
                 player.Player.Position = newPosition;
             }
         }
-        
+
+        private double Teleport(double pos)
+        {
+            if (pos < 0)
+                return _FliedSize;
+            else if (pos > _FliedSize)
+                return 0;
+            return pos;
+        }
+
         private FieldInformation GetPlayerById(int id)
         {
             if (_Map.Player1 == id)
@@ -339,23 +405,6 @@ namespace Server.Logic
                 return FieldInformation.PlayerSegment4;
         }
 
-        //private bool DetectCollision(ExtendedPlayer other)
-        //{
-        //    bool result = false;
-        //    return result;
-        //}
-
-        //private bool DetectCollision(IEnumerable<ExtendedPlayer> others)
-        //{
-        //    foreach (ExtendedPlayer player in others)
-        //    {
-        //        if (DetectCollision(player))
-        //            return true;
-        //    }
-        //    return false;
-        //}
-
-
         #endregion
 
         #region events
@@ -370,8 +419,11 @@ namespace Server.Logic
         public event SnapshotHandler SnapshotCreated;
 
 
-        public delegate void PlayerDeathHandler(DeathArgument d);
+        public delegate void PlayerDeathHandler(DeathArguments d);
         public event PlayerDeathHandler PlayerDied;
+
+        public delegate void GameEndedHandler(GameEndedArguments g);
+        public event GameEndedHandler GameEnded;
         #endregion
     }
 }

@@ -14,5 +14,11 @@ namespace Server
             X = -1;
             Y = -1;
         }
+
+        public Point(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
     }
 }
