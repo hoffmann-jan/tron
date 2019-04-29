@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+
+<fx:root type="javafx.scene.layout.AnchorPane" xmlns:fx="http://javafx.com/fxml/1">
+	<Label text="Lobby" AnchorPane.topAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" fx:id="title" opacity="0"/>
+	<VBox fx:id="playerContainer" AnchorPane.topAnchor="40" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" spacing="20" opacity="0">
+		<padding>
+			<Insets left="20"/>
+		</padding>
+		<HBox alignment="CENTER_LEFT" fx:id="readyButtonBox">
+			<Button text="Ready" onAction="#ready"/>
+		</HBox> 
+	</VBox>  
+</fx:root>
+

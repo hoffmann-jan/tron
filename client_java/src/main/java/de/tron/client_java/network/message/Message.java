@@ -4,20 +4,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Message {
-
-	private int id = -1;
+	
+	int lobbyId = -1;
+	int length = -1;
 	
 	private MessageType type;
-	private MovementDirection move;
+	private Action action;
 	
-	private final List<Coordinate> updatedCoordinates = new ArrayList<>();
+	private final List<Player> players = new ArrayList<>();
 
-	public int getId() {
-		return id;
+	public int getLobbyId() {
+		return lobbyId;
 	}
 
-	public void setId(int id) {
-		this.id = id;
+	public void setLobbyId(int lobbyId) {
+		this.lobbyId = lobbyId;
+	}
+	
+	public int getLength() {
+		return length;
+	}
+
+	public void setLength(int length) {
+		this.length = length;
 	}
 
 	public MessageType getType() {
@@ -28,16 +37,16 @@ public class Message {
 		this.type = type;
 	}
 
-	public MovementDirection getMove() {
-		return move;
+	public Action getAction() {
+		return action;
 	}
 
-	public void setMove(MovementDirection move) {
-		this.move = move;
+	public void setAction(Action action) {
+		this.action = action;
 	}
 
-	public List<Coordinate> getUpdatedCoordinates() {
-		return updatedCoordinates;
+	public List<Player> getPlayers() {
+		return players;
 	}
 
 }

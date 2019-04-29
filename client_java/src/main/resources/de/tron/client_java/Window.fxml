@@ -2,11 +2,36 @@
 
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import de.tron.client_java.gui.view.ConnectionView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.geometry.Insets?>
+<?import de.tron.client_java.gui.view.LobbyView?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.tron.client_java.gui.View">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.tron.client_java.gui.view.View">
 	<center>
-		<Canvas width="500" height="500" fx:id="field">
-		</Canvas>
+		<AnchorPane>
+			<HBox AnchorPane.topAnchor="30" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" alignment="CENTER_RIGHT">
+				<padding>
+					<Insets right="15"/>
+				</padding>
+				<Label fx:id="statusInformation" alignment="CENTER_RIGHT"/> 
+			</HBox> 
+			<StackPane AnchorPane.topAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.bottomAnchor="0">
+				<Canvas width="500" height="500" fx:id="field" />
+				<LobbyView visible="false" fx:id="lobbyView" maxWidth="500" maxHeight="300"/> 
+				<ConnectionView fx:id="connectionScreen" maxWidth="500" maxHeight="300"/>  
+				<ImageView fx:id="titleScreen">
+					<image>
+						<Image url="@title_placeholder.jpg" />
+					</image>
+				</ImageView>
+			</StackPane> 
+		</AnchorPane> 
 	</center>
 </BorderPane>
 

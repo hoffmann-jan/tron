@@ -2,6 +2,7 @@ package de.tron.client_java.network;
 
 import java.util.concurrent.SubmissionPublisher;
 import java.util.concurrent.TimeUnit;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -10,11 +11,9 @@ import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.ForkJoinPool;
 
 import de.tron.client_java.network.message.Message;
-import de.tron.client_java.network.message.MessageType;
-import de.tron.client_java.network.message.MovementDirection;
 import de.tron.client_java.network.message.converter.JsonMessageConverter;
 
-public class NetworkController implements AutoCloseable {
+public class NetworkController implements Closeable {
 
 	private static final long OFFER_TIMEOUT = 10; 
 	
@@ -23,15 +22,6 @@ public class NetworkController implements AutoCloseable {
 	private Socket connection;
 	private Scanner input;
 	private PrintWriter output;
-	
-	public NetworkController() {
-		try {
-			connect("localhost", 4321);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 	
 	public void subscribe(Subscriber<? super Message> subscriber) {
 		this.publisher.subscribe(subscriber);
@@ -44,43 +34,45 @@ public class NetworkController implements AutoCloseable {
 		
 		Thread receiver = new Thread(this::receiveAndPublish);
 		receiver.setDaemon(true);
+		receiver.setUncaughtExceptionHandler((t,e) -> e.printStackTrace());
 		receiver.start();
 	}	
 
 	@Override
-	public void close() throws Exception {
+	public void close() {
 		this.input.close();
 		this.output.close();
-		this.connection.close();
+		try {
+			this.connection.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
-	public void sendDirectionChangeMessage(MovementDirection direction) {
-		Message message = new Message();
-		message.setType(MessageType.MOVE);
-		message.setMove(direction);
-		sendMessage(message);
-	}
-	
-	private void sendMessage(Message message) {
+	public void sendMessage(Message message) {
 		JsonMessageConverter converter = new JsonMessageConverter();
-		String messageString = converter.serialize(message);
+		String messageString = converter.serialize(message) + "<EOF>";
 		this.output.println(messageString);
 	}
 	
 	private void receiveAndPublish() {
-		while (this.input.hasNext()) {
-			Message message = receiveMessage();
-			if (message.getType() == MessageType.DISCONNECT) {
-				break;
-			} else {
+		try {
+			while (this.input.hasNext()) {
+				Message message = receiveMessage();
 				publishMessage(message);
 			}
+		} catch (Exception e) {
+			this.publisher.closeExceptionally(e);
 		}
+		this.publisher.close();
 	}
 
 	private Message receiveMessage() {
 		JsonMessageConverter converter = new JsonMessageConverter();
 		String messageStr = this.input.next();
+		messageStr = messageStr.replaceAll("<EOF>", "");
+		System.out.println(messageStr);
 		return converter.deserialize(messageStr);
 	}
 	

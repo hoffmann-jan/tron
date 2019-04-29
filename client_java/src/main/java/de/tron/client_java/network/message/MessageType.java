@@ -5,9 +5,13 @@ public enum MessageType {
 	CONNECT(0),
 	DISCONNECT(1),
 	ADD(2),
-	MOVE(3),
-	UPDATE(4),
-	DEAD(5);
+	UPDATE(3),
+	ACTION(4),
+	DEAD(5),
+	LOBBY(6),
+	READY(7),
+	START(8),
+	RESULT(9);
 	
 	private final int index;
 	
@@ -20,11 +24,19 @@ public enum MessageType {
 			case 2:
 				return MessageType.ADD;
 			case 3:
-				return MessageType.MOVE;
-			case 4:
 				return MessageType.UPDATE;
+			case 4:
+				return MessageType.ACTION;
 			case 5:
 				return MessageType.DEAD;
+			case 6:
+				return MessageType.LOBBY;
+			case 7:
+				return MessageType.READY;
+			case 8:
+				return MessageType.START;
+			case 9:
+				return MessageType.RESULT;
 			default:
 				throw new IndexOutOfBoundsException("There is no message type for the index " + index);
 		}
