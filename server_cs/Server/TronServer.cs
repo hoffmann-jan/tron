@@ -166,22 +166,6 @@ namespace Server
             StateObject state = (StateObject)asyncResult.AsyncState;
             Socket handler = state.WorkSocket;
 
-
-            NetworkStream stream = new NetworkStream(handler);
-            if (!stream.CanRead)
-                return;
-
-            using (StreamReader reader = new StreamReader(stream, Encoding.ASCII, false, Globals.BufferSize, true))
-            {
-                string line;
-
-                while ((line = await reader.ReadLineAsync()) != null)
-                {
-
-                }
-            }
-
-
             if (!handler.Connected)
             {
                 return;
