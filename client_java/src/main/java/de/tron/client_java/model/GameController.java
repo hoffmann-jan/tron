@@ -73,7 +73,7 @@ public class GameController implements Processor<Message, GameMessage> {
 	}
 	
 	public void connect(ConnectionData data) throws IOException {
-		this.network.connect(data.getIp(), data.getPort());
+		this.network.configureConnection(data.getIp(), data.getPort());
 		this.localPlayer = new Player();
 		this.localPlayer.setColor(data.getColor());
 		this.localPlayer.setName(data.getName());

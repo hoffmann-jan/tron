@@ -8,6 +8,8 @@ public class Message {
 	int lobbyId = -1;
 	int length = -1;
 	
+	long packageNumber = -1;
+	
 	private MessageType type;
 	private Action action;
 	
@@ -27,6 +29,14 @@ public class Message {
 
 	public void setLength(int length) {
 		this.length = length;
+	}
+	
+	public long getPackageNumber() {
+		return packageNumber;
+	}
+	
+	public void setPackageNumber(long packageNumber) {
+		this.packageNumber = packageNumber;
 	}
 
 	public MessageType getType() {

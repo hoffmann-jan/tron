@@ -24,6 +24,7 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 
 	private static final String LENGTH = "Length";
 	private static final String LOBBY_ID = "LobbyId";
+	private static final String PACKAGE_NUMBER = "PackageNumber";
 	private static final String TYPE = "Type";
 	private static final String MOVE = "Action";
 	private static final String PLAYERS = "Players";
@@ -43,15 +44,16 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	@Override
 	public JsonElement serialize(Message src, Type typeOfSrc, JsonSerializationContext context) {
 		JsonObject root = new JsonObject();
-		addIntIfNotInit(src.getLength(), root, LENGTH);
-		addIntIfNotInit(src.getLobbyId(), root, LOBBY_ID);
+		addNumberIfNotInit(src.getLength(), root, LENGTH);
+		addNumberIfNotInit(src.getLobbyId(), root, LOBBY_ID);
+		addNumberIfNotInit(src.getPackageNumber(), root, PACKAGE_NUMBER);
 		addTypeIfNotNull(src.getType(), root);
 		addMoveIfNotNull(src.getAction(), root);
 		addAllPlayers(src, root);
 		return root;
 	}
 	
-	private void addIntIfNotInit(int value, JsonObject json, String property) {
+	private void addNumberIfNotInit(long value, JsonObject json, String property) {
 		if (value != -1) {
 			json.addProperty(property, value);
 		}
@@ -78,8 +80,8 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	private void addPositionIfNotNull(Position value, JsonObject json) {
 		if (value != null) {
 			JsonObject jsonPosition = new JsonObject();
-			addIntIfNotInit(value.getX(), jsonPosition, POSITION_X);
-			addIntIfNotInit(value.getY(), jsonPosition, POSITION_Y);
+			addNumberIfNotInit(value.getX(), jsonPosition, POSITION_X);
+			addNumberIfNotInit(value.getY(), jsonPosition, POSITION_Y);
 			jsonPosition.addProperty(POSITION_JUMPING, value.isJumping());
 			json.add(PLAYER_POSITION, jsonPosition);
 		}
@@ -89,8 +91,8 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 		JsonArray players = new JsonArray();
 		for (Player player : src.getPlayers()) {
 			JsonObject jsonPlayer = new JsonObject();
-			addIntIfNotInit(player.getId(), jsonPlayer, PLAYER_ID);
-			addIntIfNotInit(player.getColor(), jsonPlayer, PLAYER_COLOR);
+			addNumberIfNotInit(player.getId(), jsonPlayer, PLAYER_ID);
+			addNumberIfNotInit(player.getColor(), jsonPlayer, PLAYER_COLOR);
 			addObjectIfNotNull(player.getName(), jsonPlayer, PLAYER_NAME);
 			addPositionIfNotNull(player.getPosition(), jsonPlayer);
 			players.add(jsonPlayer);
@@ -101,6 +103,7 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	}
 	
 	public Message deserialize(String jsonString) {
+		jsonString = jsonString.trim();
 		JsonElement element = new JsonParser().parse(jsonString);
 		return deserialize(element, null, null);
 	}
@@ -116,6 +119,7 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 			
 			message.setLobbyId(getAttributeAsInt(jsonMessage, LOBBY_ID));
 			message.setLength(getAttributeAsInt(jsonMessage, LENGTH));
+			message.setPackageNumber(getAttributeAsLong(jsonMessage, PACKAGE_NUMBER));
 			message.setAction(mapMove(move));
 			message.setType(mapType(type));
 			message.getPlayers().addAll(getAttributeAsPlayerSet(jsonMessage, PLAYERS));
@@ -139,6 +143,15 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 		JsonElement attribute = object.get(property);
 		if (attribute != null) {
 			return attribute.getAsInt();
+		} else {
+			return -1;
+		}
+	}
+	
+	private long getAttributeAsLong(JsonObject object, String property) {
+		JsonElement attribute = object.get(property);
+		if (attribute != null) {
+			return attribute.getAsLong();
 		} else {
 			return -1;
 		}
