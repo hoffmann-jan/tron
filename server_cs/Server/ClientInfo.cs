@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using System.Text;
+using Server.Protocol;
 
 namespace Server
 {
@@ -9,19 +10,13 @@ namespace Server
     public class ClientInfo
     {
         #region Fields
-        private int _PlayerId;
         private StateObject _StateObject;
         #endregion
 
         #region Properties
         public bool Ready { get; set; }
         public int LobbyId { get; set; }
-        public int Color { get; set; }
-        public string Name { get; set; }
-        /// <summary>
-        /// Player Id.
-        /// </summary>
-        public int PlayerId { get => _PlayerId; }
+        public Player Player { get; set; }
         /// <summary>
         /// State object for reading client data asynchronously.
         /// </summary>
@@ -32,12 +27,12 @@ namespace Server
         /// <summary>
         /// Constructor
         /// </summary>
-        public ClientInfo(StateObject client, int playerId, string name, int lobbyId)
+        public ClientInfo(StateObject client, int playerId, Player player, int lobbyId)
         {
-            _PlayerId = playerId;
-            _StateObject = client;
+            StateObject = client;
             LobbyId = lobbyId;
-            Name = name;
+            Player = player;
+            Player.Id = playerId;
         }
         #endregion
 

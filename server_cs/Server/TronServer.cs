@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -53,8 +54,8 @@ namespace Server
         {
             Protocol.Protocol protocol = new Protocol.Protocol();
             protocol.Type = Protocol.Type.TYPE_RESULT;
-            // Todo: id des gewinners übermitteln
-            protocol.LobbyId = g.Id;
+            _Clients.TryGetValue(g.Id, out var winner);
+            protocol.Players.Add(winner.Player);
 
             Broadcast(protocol);
         }
@@ -73,8 +74,8 @@ namespace Server
         {
             Protocol.Protocol protocol = new Protocol.Protocol();
             protocol.Type = Protocol.Type.TYPE_DEAD;
-            // Todo: id des toten spielers übermitteln
-            protocol.LobbyId = d.Id;
+            _Clients.TryGetValue(d.Id, out var loser);
+            protocol.Players.Add(loser.Player);
 
             Broadcast(protocol);
         }
@@ -178,12 +179,17 @@ namespace Server
                 // There  might be more data, so store the data received so far.
                 state.StringBuilder.Append(Encoding.ASCII.GetString(state.Buffer, 0, bytesRead));
 
+
                 // Check for end-of-file tag. If it is not there, read more data.
                 content = state.StringBuilder.ToString();
-                if (content.IndexOf("<EOF>", StringComparison.InvariantCulture) > -1)
+                if (content.IndexOf(Globals.EofTag, StringComparison.InvariantCulture) > -1)
                 {
+                    content = content.Replace(Globals.EofTag, string.Empty);
+                    Console.WriteLine(content);
+
                     // Get message from data.
                     Protocol.Protocol protocol = JsonConvert.DeserializeObject<Protocol.Protocol>(content.ToString());
+
 
                     if (protocol == null)
                     {
@@ -195,26 +201,22 @@ namespace Server
                     {
                         case Protocol.Type.TYPE_CONNECT:
                             // Add client to list.
-                            ClientInfo clientInfo = new ClientInfo(state, GetNextPlayerId(), protocol.Players.First().Name, protocol.LobbyId);
-                            clientInfo.Color = 123; //TODO: COLOR als int???
-                            if (!_Clients.TryAdd(clientInfo.PlayerId, clientInfo))
+                            ClientInfo clientInfo = new ClientInfo(state, GetNextPlayerId(), protocol.Players.First(), protocol.LobbyId);
+                            if (!_Clients.TryAdd(clientInfo.Player.Id, clientInfo))
                                 return;
 
                             // Init player
-                            Console.WriteLine($"Player:{protocol.Players.First().Name} joined.");
-                            Player player = new Player();
-                            player.Id = clientInfo.PlayerId;
-                            player.Color = clientInfo.Color;
-                            player.Name = protocol.Players.First().Name;
-                            Tron.RegisterPlayer(player);
+                            Console.WriteLine($"Player: {protocol.Players.First().Name} joined.");
+                            Tron.RegisterPlayer(clientInfo.Player);
                             protocol.Players = new List<Player>();
-                            protocol.Players.Add(player);
+                            protocol.Players.Add(clientInfo.Player);
                             protocol.Type = Protocol.Type.TYPE_CONNECT;
 
                             // Send inital game information to client.
                             Send(handler, protocol);
 
-                            // TODO: LOBBY
+                            // Lobby
+                            SendLobbyMessage(handler, clientInfo);
 
 
                             break;
@@ -226,6 +228,8 @@ namespace Server
 
                         case Protocol.Type.TYPE_READY:
                             // When all rdy, then start the game
+                            _Clients.First(p => p.Value.Player.Id == protocol.Players.First().Id).Value.Ready = true;
+
                             if (_Clients.Any(c => c.Value.Ready != true))
                                 break;
 
@@ -260,6 +264,32 @@ namespace Server
                     // Not all data received. Get more.
                     handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
                 }
+
+            }
+        }
+
+        private static void SendLobbyMessage(Socket handler, ClientInfo clientInfo)
+        {
+            var others = _Clients.Where(o => o.Key != clientInfo.Player.Id);
+
+            // inform client
+            Protocol.Protocol lobbyProtocol = new Protocol.Protocol();
+            lobbyProtocol.Type = Protocol.Type.TYPE_LOBBY;
+            lobbyProtocol.LobbyId = clientInfo.LobbyId;
+            foreach(var other in others)
+            {
+                lobbyProtocol.Players.Add(other.Value.Player);
+            }
+            Send(handler, lobbyProtocol);
+
+            // inform others
+            Protocol.Protocol addProtocol = new Protocol.Protocol();
+            addProtocol.Type = Protocol.Type.TYPE_ADD;
+            addProtocol.Players.Add(clientInfo.Player);
+
+            foreach(var other in others)
+            {
+                Send(other.Value.StateObject.WorkSocket, addProtocol);
             }
         }
 
@@ -281,7 +311,8 @@ namespace Server
 
             string data = JsonConvert.SerializeObject(protocol, typeof(Protocol.Protocol), Formatting.None, new JsonSerializerSettings());
 
-            data = string.Concat(data, Properties.Resources.EndOfFileTag);
+            data = string.Concat(data, Properties.Resources.EndOfFileTag, Environment.NewLine);
+            Console.WriteLine(data);
 
             // Convert the string data to byte data using ASCII encoding.
             byte[] byteData = Encoding.UTF8.GetBytes(data);

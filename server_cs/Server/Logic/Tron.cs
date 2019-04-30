@@ -65,27 +65,27 @@ namespace Server.Logic
         {
             ExtendedPlayer extendedPlayer = new ExtendedPlayer(player);
             Position position = new Position();
-            double halfSize = _FliedSize / 2;
+            int halfSize = _FliedSize / 2;
             switch (_Starter)
             {
                 case 0:
                     position.X = halfSize;
                     position.Y = 0;
-                    _GameField[0, (int)halfSize] = FieldInformation.Player1;
+                    _GameField[0, halfSize] = FieldInformation.Player1;
                     _Map.Player1 = player.Id;
                     extendedPlayer.Direction = Direction.Up;
                     break;
                 case 1:
                     position.X = 0;
                     position.Y = halfSize;
-                    _GameField[0, (int)halfSize] = FieldInformation.Player2;
+                    _GameField[0, halfSize] = FieldInformation.Player2;
                     _Map.Player2 = player.Id;
                     extendedPlayer.Direction = Direction.Right;
                     break;
                 case 2:
                     position.X = _FliedSize;
                     position.Y = halfSize;
-                    _GameField[0, (int)halfSize] = FieldInformation.Player3;
+                    _GameField[0, halfSize] = FieldInformation.Player3;
                     _Map.Player3 = player.Id;
                     extendedPlayer.Direction = Direction.Left;
                     break;
@@ -111,7 +111,7 @@ namespace Server.Logic
         /// <param name="playerIds"></param>
         public void StartGameLoop()
         {
-            Task gameThread = Task.Run(GameLoop, _CancellationTokenSource.Token);
+            Task gameThread = Task.Run(() => GameLoop(), _CancellationTokenSource.Token);
         }
 
         /// <summary>
@@ -213,7 +213,7 @@ namespace Server.Logic
                 {
                     Thread.Sleep(10);
                 }
-                Update(elapsed);
+                Update();
                 end = CheckGameEnd();
                 Broadcast();
             }
@@ -228,11 +228,11 @@ namespace Server.Logic
             GameEnded?.Invoke(new GameEndedArguments(winner));
         }
 
-        private void Update(double deltaTime)
+        private void Update()
         {
             // Prcocess game.
             // Move players.
-            Move(deltaTime);
+            Move();
 
             // Detect collisions and register postion
             foreach (ExtendedPlayer player in _Players)
@@ -342,7 +342,7 @@ namespace Server.Logic
             }
         }
 
-        private void Move(double deltaTime)
+        private void Move()
         {
             foreach (ExtendedPlayer player in _Players)
             {
@@ -351,19 +351,19 @@ namespace Server.Logic
                 switch (player.Direction)
                 {
                     case Direction.Down:
-                        newPosition.Y -= PlayerSpeed * deltaTime;
+                        newPosition.Y -= 1;
                         newPosition.Y = Teleport(newPosition.Y);
                         break;
                     case Direction.Left:
-                        newPosition.X -= PlayerSpeed * deltaTime;
+                        newPosition.X -= 1;
                         newPosition.X = Teleport(newPosition.X);
                         break;
                     case Direction.Right:
-                        newPosition.X += PlayerSpeed * deltaTime;
+                        newPosition.X += 1;
                         newPosition.X = Teleport(newPosition.X);
                         break;
                     case Direction.Up:
-                        newPosition.Y += PlayerSpeed * deltaTime;
+                        newPosition.Y += 1;
                         newPosition.Y = Teleport(newPosition.Y);
                         break;
                 }
@@ -372,7 +372,7 @@ namespace Server.Logic
             }
         }
 
-        private double Teleport(double pos)
+        private int Teleport(int pos)
         {
             if (pos < 0)
                 return _FliedSize;
