@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
+
+<fx:root xmlns:fx="http://javafx.com/fxml/1" type="VBox">
+	<spacing>20</spacing>
+	<alignment>CENTER</alignment>
+	<Label text="Winner"/> 	
+</fx:root>
+

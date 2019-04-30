@@ -1,4 +1,4 @@
-package de.tron.client_java.gui.view;
+package de.tron.client_java.gui.view.screen;
 
 import java.io.IOException;
 
@@ -10,12 +10,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
-public class LobbyPlayerView extends HBox {
+public class LobbyPlayerEntry extends HBox {
 
 	@FXML private Rectangle playerColor;
 	@FXML private Label playerName;
 	
-	public LobbyPlayerView() {
+	public LobbyPlayerEntry() {
 		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("LobbyPlayer.fxml"));
 		fxmlLoader.setRoot(this);
 		fxmlLoader.setController(this);

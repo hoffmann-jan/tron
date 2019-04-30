@@ -52,7 +52,8 @@ public class NetworkController implements Closeable {
 	
 	public void sendMessage(Message message) {
 		JsonMessageConverter converter = new JsonMessageConverter();
-		String messageString = converter.serialize(message) + "<EOF>";
+		String messageString = converter.serialize(message);
+//				+ "<EOF>";
 		this.output.println(messageString);
 	}
 	

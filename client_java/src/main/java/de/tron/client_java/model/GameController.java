@@ -1,12 +1,12 @@
 package de.tron.client_java.model;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Flow.Processor;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
@@ -31,8 +31,8 @@ public class GameController implements Processor<Message, GameMessage> {
 	
 	private Player localPlayer;
 	
-	private final Set<Player> updatedPlayers = new HashSet<>();
-	private final Map<Player, Queue<Position>> playerModels = new HashMap<>();
+	private final Set<Player> updatedPlayers = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	private final Map<Player, Queue<Position>> playerModels = new ConcurrentHashMap<>();
 	
 	private final NetworkController network = new NetworkController();
 
@@ -185,7 +185,7 @@ public class GameController implements Processor<Message, GameMessage> {
 			this.localPlayer.setId(messagPlayer.getId());
 		}
 		this.updatedPlayers.add(localPlayer);
-		this.playerModels.put(this.localPlayer, new LinkedList<>());
+		this.playerModels.put(this.localPlayer, new ConcurrentLinkedQueue<>());
 	}
 	
 	private void addPlayers(Message message) {
@@ -194,7 +194,7 @@ public class GameController implements Processor<Message, GameMessage> {
 	}
 	
 	private void addOriginalPlayers(Message message) {
-		message.getPlayers().forEach(p -> this.playerModels.put(p, new LinkedList<>()));
+		message.getPlayers().forEach(p -> this.playerModels.put(p, new ConcurrentLinkedQueue<>()));
 	}
 
 	private void updateTails(Message message) {

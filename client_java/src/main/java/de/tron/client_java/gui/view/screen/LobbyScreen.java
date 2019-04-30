@@ -1,4 +1,4 @@
-package de.tron.client_java.gui.view;
+package de.tron.client_java.gui.view.screen;
 
 import java.io.IOException;
 import java.util.Map.Entry;
@@ -17,7 +17,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 
-public class LobbyView extends AnchorPane {
+public class LobbyScreen extends AnchorPane implements Screen {
 	
 	@FXML private Label title;
 	@FXML private VBox playerContainer;
@@ -25,7 +25,7 @@ public class LobbyView extends AnchorPane {
 	
 	private LobbyViewModel viewModel;
 	
-	public LobbyView() {
+	public LobbyScreen() {
 		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("Lobby.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
@@ -37,6 +37,7 @@ public class LobbyView extends AnchorPane {
         }
     }
 	
+	@Override
 	public Transition getTransition(boolean reverse) {
 		readyButtonBox.setOpacity(0);
 		Transition transition = new Transition() {
@@ -74,7 +75,7 @@ public class LobbyView extends AnchorPane {
 	private void refreshPlayers(ObservableMap<String, Color> newMap) {
 		this.playerContainer.getChildren().clear();
 		for (Entry<String, Color> playerEntry : newMap.entrySet()) {
-			LobbyPlayerView playerView = new LobbyPlayerView();
+			LobbyPlayerEntry playerView = new LobbyPlayerEntry();
 			playerView.setPlayerName(playerEntry.getKey());
 			playerView.setPlayerColor(playerEntry.getValue());
 			this.playerContainer.getChildren().add(playerView);

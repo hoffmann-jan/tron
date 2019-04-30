@@ -1,4 +1,4 @@
-package de.tron.client_java.gui.view;
+package de.tron.client_java.gui.view.screen;
 
 import java.io.IOException;
 
@@ -18,7 +18,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.util.Duration;
 
-public class ConnectionView extends AnchorPane {
+public class ConnectionScreen extends AnchorPane implements Screen {
 
 	@FXML private Label networkHead;
 	@FXML private Label gameHead;
@@ -42,7 +42,7 @@ public class ConnectionView extends AnchorPane {
 	
 	private ConnectionViewModel viewModel;
 	
-	public ConnectionView() {
+	public ConnectionScreen() {
 		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("Connection.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
@@ -77,6 +77,7 @@ public class ConnectionView extends AnchorPane {
 		this.connectIndicator.visibleProperty().bindBidirectional(this.viewModel.isConnectingProperty());
 	}
 	
+	@Override
 	public Transition getTransition(boolean reverse) {
 		this.connectIndicator.setOpacity(0);
 		Transition transition = new Transition() {
