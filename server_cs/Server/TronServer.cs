@@ -158,7 +158,7 @@ namespace Server
         /// Callback reader.
         /// </summary>
         /// <param name="asyncResult">Async result.</param>
-        public static async void ReadCallback(IAsyncResult asyncResult)
+        public static void ReadCallback(IAsyncResult asyncResult)
         {
             string content = string.Empty;
 
@@ -177,11 +177,11 @@ namespace Server
 
                 while ((line = await reader.ReadLineAsync()) != null)
                 {
-                    ProcessInputString(line, state);
+
                 }
             }
 
-            /*
+
             if (!handler.Connected)
             {
                 return;
@@ -200,6 +200,80 @@ namespace Server
                 content = state.StringBuilder.ToString();
                 if (content.IndexOf(Globals.EofTag, StringComparison.InvariantCulture) > -1)
                 {
+                    content = content.Replace(Globals.EofTag, string.Empty);
+                    Console.WriteLine(content);
+
+                    // Get message from data.
+                    Protocol.Protocol protocol = JsonConvert.DeserializeObject<Protocol.Protocol>(content.ToString());
+
+
+                    if (protocol == null)
+                    {
+                        Console.Error.WriteLine("Can not read the protocol!");
+                        return;
+                    }
+
+                    switch (protocol.Type)
+                    {
+                        case Protocol.Type.TYPE_CONNECT:
+                            // Add client to list.
+                            ClientInfo clientInfo = new ClientInfo(state, GetNextPlayerId(), protocol.Players.First(), protocol.LobbyId);
+                            if (!_Clients.TryAdd(clientInfo.Player.Id, clientInfo))
+                                return;
+
+                            // Init player
+                            Console.WriteLine($"Player: {protocol.Players.First().Name} joined.");
+                            Tron.RegisterPlayer(clientInfo.Player);
+                            protocol.Players = new List<Player>();
+                            protocol.Players.Add(clientInfo.Player);
+                            protocol.Type = Protocol.Type.TYPE_CONNECT;
+
+                            // Send inital game information to client.
+                            Send(handler, protocol);
+
+                            // Lobby
+                            SendLobbyMessage(handler, clientInfo);
+
+
+                            break;
+
+                        case Protocol.Type.TYPE_ACTION:
+                            // Process action
+                            Tron.ProcessInput(protocol);
+                            break;
+
+                        case Protocol.Type.TYPE_READY:
+                            // When all rdy, then start the game
+                            _Clients.First(p => p.Value.Player.Id == protocol.Players.First().Id).Value.Ready = true;
+
+                            if (_Clients.Any(c => c.Value.Ready != true))
+                                break;
+
+                            Tron.StartGameLoop();
+                            break;
+
+                        case Protocol.Type.TYPE_DISCONNECT:
+                            // Remove client from active client list.
+                            KeyValuePair<int, ClientInfo> kvc = _Clients.FirstOrDefault(kv => kv.Value.StateObject.WorkSocket.Equals(handler));
+                            if (kvc.Value != null)
+                            {
+                                _Clients.TryRemove(kvc.Key, out var info);
+                            }
+
+                            handler.Shutdown(SocketShutdown.Both);
+                            handler.Close();
+                            break;
+
+                        case Protocol.Type.TYPE_ADD:
+                        case Protocol.Type.TYPE_DEAD:
+                        case Protocol.Type.TYPE_LOBBY:
+                        case Protocol.Type.TYPE_RESULT:
+                        case Protocol.Type.TYPE_START:
+                        case Protocol.Type.TYPE_UPDATE:
+                        default:
+                            Console.Error.WriteLine("Invaild protocol message recieved!");
+                            break;
+                    }
                 }
                 else
                 {
@@ -207,86 +281,6 @@ namespace Server
                     handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
                 }
 
-            }
-            */           
-        }
-
-
-        private static void ProcessInputString(string input, StateObject state)
-        {
-            input = input.Replace(Globals.EofTag, string.Empty);
-            Console.WriteLine(input);
-
-            // Get message from data.
-            Protocol.Protocol protocol = JsonConvert.DeserializeObject<Protocol.Protocol>(input);
-
-
-            if (protocol == null)
-            {
-                Console.Error.WriteLine("Can not read the protocol!");
-                return;
-            }
-
-            switch (protocol.Type)
-            {
-                case Protocol.Type.TYPE_CONNECT:
-                    // Add client to list.
-                    ClientInfo clientInfo = new ClientInfo(state, GetNextPlayerId(), protocol.Players.First(), protocol.LobbyId);
-                    if (!_Clients.TryAdd(clientInfo.Player.Id, clientInfo))
-                        return;
-
-                    // Init player
-                    Console.WriteLine($"Player: {protocol.Players.First().Name} joined.");
-                    Tron.RegisterPlayer(clientInfo.Player);
-                    protocol.Players = new List<Player>();
-                    protocol.Players.Add(clientInfo.Player);
-                    protocol.Type = Protocol.Type.TYPE_CONNECT;
-
-                    // Send inital game information to client.
-                    Send(state.WorkSocket, protocol);
-
-                    // Lobby
-                    SendLobbyMessage(state.WorkSocket, clientInfo);
-
-
-                    break;
-
-                case Protocol.Type.TYPE_ACTION:
-                    // Process action
-                    Tron.ProcessInput(protocol);
-                    break;
-
-                case Protocol.Type.TYPE_READY:
-                    // When all rdy, then start the game
-                    _Clients.First(p => p.Value.Player.Id == protocol.Players.First().Id).Value.Ready = true;
-
-                    if (_Clients.Any(c => c.Value.Ready != true))
-                        break;
-
-                    Tron.StartGameLoop();
-                    break;
-
-                case Protocol.Type.TYPE_DISCONNECT:
-                    // Remove client from active client list.
-                    KeyValuePair<int, ClientInfo> kvc = _Clients.FirstOrDefault(kv => kv.Value.StateObject.WorkSocket.Equals(state.WorkSocket));
-                    if (kvc.Value != null)
-                    {
-                        _Clients.TryRemove(kvc.Key, out var info);
-                    }
-
-                    state.WorkSocket.Shutdown(SocketShutdown.Both);
-                    state.WorkSocket.Close();
-                    break;
-
-                case Protocol.Type.TYPE_ADD:
-                case Protocol.Type.TYPE_DEAD:
-                case Protocol.Type.TYPE_LOBBY:
-                case Protocol.Type.TYPE_RESULT:
-                case Protocol.Type.TYPE_START:
-                case Protocol.Type.TYPE_UPDATE:
-                default:
-                    Console.Error.WriteLine("Invaild protocol message recieved!");
-                    break;
             }
         }
 
