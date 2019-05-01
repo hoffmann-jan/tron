@@ -14,9 +14,3 @@ server client based game.
 * navigate to server_cs folder
 * configuration for debug in globals.cs file
 * command: dotnet run
-
-### Todo
-
-* create lobby
-
-## Client Cpp
