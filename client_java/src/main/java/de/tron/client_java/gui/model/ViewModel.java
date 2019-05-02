@@ -59,7 +59,7 @@ public class ViewModel implements Subscriber<GameMessage> {
 			Platform.runLater(this.onStart); 
 			break;
 		case UPDATE:
-			this.gameModel.refresh();
+			Platform.runLater(this.gameModel::refresh);
 			break;
 		}
 		this.subscription.request(1);

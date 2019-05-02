@@ -5,9 +5,6 @@ import java.util.concurrent.TimeUnit;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Scanner;
 import java.util.concurrent.Flow.Subscriber;
@@ -22,60 +19,60 @@ public class NetworkController implements Closeable {
 	
 	private final SubmissionPublisher<Message> publisher = new SubmissionPublisher<>(ForkJoinPool.commonPool(), 4);
 	
-	private DatagramSocket connection;
-	
-	private int port;
-	private InetAddress address;
+	private Socket connection;
+	private Scanner input;
+	private PrintWriter output;
 	
 	public void subscribe(Subscriber<? super Message> subscriber) {
 		this.publisher.subscribe(subscriber);
 	}
 	
-	public void configureConnection(String address, int port) throws IOException {
-		this.address = InetAddress.getByName(address);
-		this.port = port;
-		System.out.println("coonect");
-		this.connection = new DatagramSocket(5000);
+	public void configureConnection(String ip, int port) throws IOException {
+		this.connection = new Socket(ip, port);
+		this.input = new Scanner(connection.getInputStream());
+		this.output = new PrintWriter(this.connection.getOutputStream(), true);
 		
-		Thread receive = new Thread(this::receiveAndPublish);
-		receive.setDaemon(true);
-		receive.start();
+		Thread receiver = new Thread(this::receiveAndPublish);
+		receiver.setDaemon(true);
+		receiver.setUncaughtExceptionHandler((t,e) -> e.printStackTrace());
+		receiver.start();
 	}	
 
 	@Override
 	public void close() {
-		this.connection.close();
-		this.publisher.close();
+		this.input.close();
+		this.output.close();
+		try {
+			this.connection.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public void sendMessage(Message message) {
 		JsonMessageConverter converter = new JsonMessageConverter();
 		String messageString = converter.serialize(message);
-		byte[] packetData = messageString.getBytes();
-		try {
-			this.connection.send(new DatagramPacket(packetData, packetData.length, this.address, this.port));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+//				+ "<EOF>";
+		this.output.println(messageString);
 	}
 	
 	private void receiveAndPublish() {
-		DatagramPacket packet;
 		try {
-			while (true) {
-				packet = new DatagramPacket(new byte[1024], 1024);
-				this.connection.receive(packet);
-				Message message = receiveMessage(packet);
+			while (this.input.hasNext()) {
+				Message message = receiveMessage();
 				publishMessage(message);
 			}
 		} catch (Exception e) {
 			this.publisher.closeExceptionally(e);
 		}
+		this.publisher.close();
 	}
 
-	private Message receiveMessage(DatagramPacket packet) {
+	private Message receiveMessage() {
 		JsonMessageConverter converter = new JsonMessageConverter();
-		String messageStr = new String(packet.getData());
+		String messageStr = this.input.next();
+		messageStr = messageStr.replaceAll("<EOF>", "");
 		System.out.println(messageStr);
 		return converter.deserialize(messageStr);
 	}
