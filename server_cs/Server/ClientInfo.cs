@@ -17,19 +17,16 @@ namespace Server
         public bool Ready { get; set; }
         public int LobbyId { get; set; }
         public Player Player { get; set; }
-        /// <summary>
-        /// State object for reading client data asynchronously.
-        /// </summary>
-        public StateObject StateObject { get => _StateObject; set => _StateObject = value; }
+        public TcpClient TcpClient { get; set; }
         #endregion
 
         #region Constructor
         /// <summary>
         /// Constructor
         /// </summary>
-        public ClientInfo(StateObject client, int playerId, Player player, int lobbyId)
+        public ClientInfo(TcpClient tcpClient, int playerId, Player player, int lobbyId)
         {
-            StateObject = client;
+            TcpClient = tcpClient;
             LobbyId = lobbyId;
             Player = player;
             Player.Id = playerId;

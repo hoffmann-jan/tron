@@ -8,7 +8,6 @@ namespace Server
         public const int BufferSize = 256;
         public static string IP = "10.202.134.233";
         //public static string IP = "127.0.0.1";
-        public static string EofTag = "<EOF>";
         public static int NumberOfPlayers = 2;
     }
 }

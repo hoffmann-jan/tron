@@ -31,5 +31,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Udp\" />
+    <Folder Include="Tcp\" />
+  </ItemGroup>
   <ProjectExtensions><VisualStudio><UserProperties appconfig_1json__JsonSchema="http://json.schemastore.org/appsettings" /></VisualStudio></ProjectExtensions>
 </Project>

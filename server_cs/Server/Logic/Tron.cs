@@ -16,23 +16,18 @@ namespace Server.Logic
     public class Tron
     {
         #region fields
-        /// <summary>
-        /// Speed of a player. 500 field row / 60 sec => 1 field per second.
-        /// </summary>
-        private const float PlayerSpeed = 500f / 60f;
-        private const double FramesPerSecond = 1d / 60d;
+        private const double FramesPerMillisecond = 1000d / 60d;
         /// <summary>
         /// Size of the quadratic field.
         /// </summary>
         private int _FliedSize;
-        /// <summary>
-        /// Maps player id to enum number.
-        /// </summary>
-        private PlayerIdPlayerNumberMap _Map;
+
+        Random _Random = new Random();
+        int _FramesToNextTail = 20;
+        int _Length = 0;
 
         List<ExtendedPlayer> _Players;
         private byte _Starter = 0;
-        FieldInformation[,] _GameField;
         CancellationTokenSource _CancellationTokenSource;
         #endregion
 
@@ -47,10 +42,8 @@ namespace Server.Logic
         public Tron(int fieldSize)
         {
             _FliedSize = fieldSize;
-            _Map = new PlayerIdPlayerNumberMap();
             _Players = new List<ExtendedPlayer>();
             _CancellationTokenSource = new CancellationTokenSource();
-            InitEmptyGameField();
         }
         #endregion
 
@@ -59,41 +52,35 @@ namespace Server.Logic
         /// <summary>
         /// Reguster player.
         /// </summary>
-        /// <param name="playerId">Player id.</param>
         /// <returns>Start position.</returns>
         public void RegisterPlayer(Player player)
         {
             ExtendedPlayer extendedPlayer = new ExtendedPlayer(player);
+            extendedPlayer.Death = false;
+            extendedPlayer.Length = 0;
+
             Position position = new Position();
             int halfSize = _FliedSize / 2;
             switch (_Starter)
             {
                 case 0:
-                    position.X = halfSize;
+                    position.X = halfSize + 5;
                     position.Y = 0;
-                    _GameField[0, halfSize] = FieldInformation.Player1;
-                    _Map.Player1 = player.Id;
                     extendedPlayer.Direction = Direction.Up;
                     break;
                 case 1:
-                    position.X = 0;
-                    position.Y = halfSize;
-                    _GameField[0, halfSize] = FieldInformation.Player2;
-                    _Map.Player2 = player.Id;
+                    position.X = 10;
+                    position.Y = halfSize - 5;
                     extendedPlayer.Direction = Direction.Right;
                     break;
                 case 2:
-                    position.X = _FliedSize;
-                    position.Y = halfSize;
-                    _GameField[0, halfSize] = FieldInformation.Player3;
-                    _Map.Player3 = player.Id;
+                    position.X = _FliedSize - 10;
+                    position.Y = halfSize - 5;
                     extendedPlayer.Direction = Direction.Left;
                     break;
                 case 3:
-                    position.X = halfSize;
+                    position.X = halfSize + 5;
                     position.Y = _FliedSize;
-                    _GameField[0, (int)halfSize] = FieldInformation.Player4;
-                    _Map.Player4 = player.Id;
                     extendedPlayer.Direction = Direction.Down;
                     break;
                 default:
@@ -108,7 +95,6 @@ namespace Server.Logic
         /// <summary>
         /// Start a new game in a new thread.
         /// </summary>
-        /// <param name="playerIds"></param>
         public void StartGameLoop()
         {
             Task gameThread = Task.Run(() => GameLoop(), _CancellationTokenSource.Token);
@@ -118,28 +104,34 @@ namespace Server.Logic
         /// Process action.
         /// </summary>
         /// <param name="protocol"></param>
-        public void ProcessInput(Protocol.Protocol protocol)
+        public void ProcessInput(Protocol.Protocol protocol, int playerId)
         {
             // Get player
-            ExtendedPlayer player = _Players.FirstOrDefault(p => p.Player.Id == protocol.LobbyId);
+            ExtendedPlayer player = _Players.FirstOrDefault(p => p.Player.Id == playerId);
 
             switch (protocol.Action)
             {
                 case Protocol.Action.ACT_DOWN:
+                    if (player.Direction == Direction.Up)
+                        break;
                     player.Direction = Direction.Down;
                     break;
                 case Protocol.Action.ACT_JUMP:
-                    if (player.JumpCooldown)
-                        break;
                     player.Player.Position.Jumping = true;
                     break;
                 case Protocol.Action.ACT_LEFT:
+                    if (player.Direction == Direction.Right)
+                        break;
                     player.Direction = Direction.Left;
                     break;
                 case Protocol.Action.ACT_RIGHT:
+                    if (player.Direction == Direction.Left)
+                        break;
                     player.Direction = Direction.Right;
                     break;
                 case Protocol.Action.ACT_UP:
+                    if (player.Direction == Direction.Down)
+                        break;
                     player.Direction = Direction.Up;
                     break;
             }
@@ -158,22 +150,6 @@ namespace Server.Logic
         }
 
         /// <summary>
-        /// Initialise the game field with all fields empty.
-        /// </summary>
-        /// <param name="gameField"></param>
-        private void InitEmptyGameField()
-        {
-            _GameField = new FieldInformation[_FliedSize, _FliedSize];
-            for (int x = 0; x < _FliedSize; x++)
-            {
-                for (int y = 0; y < _FliedSize; y++)
-                {
-                    _GameField[x, y] = FieldInformation.Empty;
-                }
-            }
-        }
-
-        /// <summary>
         /// Collect data and provides.
         /// </summary>
         /// <param name="type"></param>
@@ -182,6 +158,7 @@ namespace Server.Logic
             // Create snapshot.
             Protocol.Protocol protocol = new Protocol.Protocol();
             protocol.Type = type;
+            protocol.Length = _Length;
 
             foreach (ExtendedPlayer player in _Players)
             {
@@ -199,22 +176,18 @@ namespace Server.Logic
         {
             Broadcast(Protocol.Type.TYPE_START);
 
+            // Time for the client to build the interface(gui).
+            Thread.Sleep(2000);
+
             bool end = false;
 
             double previous = GetCurrentTime();
 
             while (!end)
             {
-                double current = GetCurrentTime();
-                double elapsed = current - previous;
-                previous = current;
-
-                while (elapsed * 1000 < FramesPerSecond)
-                {
-                    Thread.Sleep(10);
-                }
+                Thread.Sleep((int)FramesPerMillisecond);
                 Update();
-                end = CheckGameEnd();
+                //end = CheckGameEnd();
                 Broadcast();
             }
 
@@ -228,18 +201,87 @@ namespace Server.Logic
             GameEnded?.Invoke(new GameEndedArguments(winner));
         }
 
+        private void DetectCollisions()
+        {
+            foreach (var playerA in _Players)
+            {
+                if (playerA.Death)
+                    continue;
+
+                if (playerA.Player.Position.Jumping)
+                    continue;
+
+                foreach (var playerB in _Players)
+                {
+                    if (playerA.Equals(playerB))
+                        continue;
+
+                    if (playerB.Death)
+                        continue;
+
+                    var head = playerA.Player.Position;
+
+                    // detect head on head collision
+                    if (head.X == playerB.Player.Position.X
+                        && head.Y == playerB.Player.Position.Y)
+                    {
+                        // One player is jumping
+                        if ((playerA.Player.Position.Jumping && !playerB.Player.Position.Jumping)
+                            || (playerB.Player.Position.Jumping && !playerA.Player.Position.Jumping))
+                            continue;
+                        else
+                        {
+                            IAmKilled(playerA.Player.Id);
+                            IAmKilled(playerB.Player.Id);
+                            break;
+                        }
+                    }
+
+                    // detect head on tail collision
+                    foreach (Point point in playerB.Tail)
+                    {
+                        if (head.X == point.X
+                            && head.Y == point.Y)
+                        {
+                            IAmKilled(playerA.Player.Id);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         private void Update()
         {
             // Prcocess game.
             // Move players.
             Move();
+            DetectCollisions();
+            _FramesToNextTail--;
 
-            // Detect collisions and register postion
-            foreach (ExtendedPlayer player in _Players)
+            if (_FramesToNextTail == 0)
             {
-                DrawInternalGameField(player);
+                _FramesToNextTail = _Random.Next(5, 26);
+                AddTailSegment();
             }
+        }
 
+        private void AddTailSegment()
+        {
+            _Length++;
+            foreach(var player in _Players)
+            {
+                if (player.Tail.Count == 0)
+                {
+                    Point t = new Point(player.Player.Position.X, player.Player.Position.Y);
+                    player.Tail.Add(t);
+                }
+                else
+                {
+                    var lastTail = player.Tail.Last();
+                    Point t = new Point(lastTail.X, lastTail.Y);
+                }
+            }
         }
 
         private bool CheckGameEnd()
@@ -253,122 +295,38 @@ namespace Server.Logic
             return false;
         }
 
-        private void DrawInternalGameField(ExtendedPlayer player)
-        {
-            switch (_GameField[(int)player.Player.Position.X, (int)player.Player.Position.Y])
-            {
-                case FieldInformation.Empty:
-                    _GameField[(int)player.Player.Position.X, (int)player.Player.Position.Y] = GetPlayerById(player.Player.Id);
-                    player.Length++;
-                    break;
-
-                case FieldInformation.Player1:
-                    if (GetPlayerById(player.Player.Id) != FieldInformation.Player1)
-                    {
-                        if (!Jumping(player))
-                            IAmKilled(player.Player.Id);
-                    }
-                    break;
-
-                case FieldInformation.Player2:
-                    if (GetPlayerById(player.Player.Id) != FieldInformation.Player2)
-                        if (!Jumping(player))
-                            IAmKilled(player.Player.Id);
-                    break;
-
-                case FieldInformation.Player3:
-                    if (GetPlayerById(player.Player.Id) != FieldInformation.Player3)
-                        if (!Jumping(player))
-                            IAmKilled(player.Player.Id);
-                    break;
-
-                case FieldInformation.Player4:
-                    if (GetPlayerById(player.Player.Id) != FieldInformation.Player4)
-                        if (!Jumping(player))
-                            IAmKilled(player.Player.Id);
-                    break;
-
-                case FieldInformation.PlayerSegment1:
-                case FieldInformation.PlayerSegment2:
-                case FieldInformation.PlayerSegment3:
-                case FieldInformation.PlayerSegment4:
-                case FieldInformation.Cross:
-                    if (!Jumping(player))
-                        IAmKilled(player.Player.Id);
-                    break;
-            }
-
-        }
-
-        private bool Jumping(ExtendedPlayer player)
-        {
-            if (player.Player.Position.Jumping)
-            {
-                player.Player.Position.Jumping = false;
-                player.LastJump = new Point((int)player.Player.Position.X, (int)player.Player.Position.Y);
-                player.JumpCooldown = true;
-                return true;
-            }
-            else if (player.LastJump.Equals(new Point((int)player.Player.Position.X, (int)player.Player.Position.Y)))
-            {
-                player.JumpCooldown = true;
-                return true;
-            }
-            else
-            {
-                player.JumpCooldown = false;
-                player.LastJump = new Point();
-                return false;
-            }
-        }
-
         private void IAmKilled(int id)
         {
             _Players.First(p => p.Player.Id == id).Death = true;
             PlayerDied?.Invoke(new DeathArguments(id));
-            RemoveFromGameField(GetPlayerById(id), GetPlayerSegemntById(id));
-        }
-
-        private void RemoveFromGameField(FieldInformation player, FieldInformation segment)
-        {
-            for (int x = 0; x < _FliedSize; x++)
-            {
-                for (int y = 0; y < _FliedSize; y++)
-                {
-                    if (_GameField[x, y] == player
-                        || _GameField[x, y] == segment)
-                        _GameField[x, y] = FieldInformation.Empty;
-                }
-            }
         }
 
         private void Move()
         {
             foreach (ExtendedPlayer player in _Players)
             {
-                Position oldPosition = player.Player.Position;
-                Position newPosition = player.Player.Position;
+                if (player.Death)
+                    continue;
+
                 switch (player.Direction)
                 {
                     case Direction.Down:
-                        newPosition.Y -= 1;
-                        newPosition.Y = Teleport(newPosition.Y);
+                        player.Player.Position.Y += 1;
+                        player.Player.Position.Y = Teleport(player.Player.Position.Y);
                         break;
                     case Direction.Left:
-                        newPosition.X -= 1;
-                        newPosition.X = Teleport(newPosition.X);
+                        player.Player.Position.X -= 1;
+                        player.Player.Position.X = Teleport(player.Player.Position.X);
                         break;
                     case Direction.Right:
-                        newPosition.X += 1;
-                        newPosition.X = Teleport(newPosition.X);
+                        player.Player.Position.X += 1;
+                        player.Player.Position.X = Teleport(player.Player.Position.X);
                         break;
                     case Direction.Up:
-                        newPosition.Y += 1;
-                        newPosition.Y = Teleport(newPosition.Y);
+                        player.Player.Position.Y -= 1;
+                        player.Player.Position.Y = Teleport(player.Player.Position.Y);
                         break;
                 }
-
-                player.Player.Position = newPosition;
             }
         }
 
@@ -381,28 +339,54 @@ namespace Server.Logic
             return pos;
         }
 
-        private FieldInformation GetPlayerById(int id)
+        private Point[,] GetPlayerHead(int x, int y)
         {
-            if (_Map.Player1 == id)
-                return FieldInformation.Player1;
-            else if (_Map.Player2 == id)
-                return FieldInformation.Player2;
-            else if (_Map.Player3 == id)
-                return FieldInformation.Player3;
-            else
-                return FieldInformation.Player4;
+            int size = 10;
+            // x,y are top left
+            // player size is 10x10
+            Point[,] result = new Point[size, size];
+
+            // bottom left
+            x = x - size;
+            int yyy;
+            for (int xx = 0; xx < size; xx++)
+            {
+                yyy = y;
+
+                for (int yy = 0; yy < size; yy++)
+                {
+                    result[xx, yy] = new Point(x, yyy++);
+                }
+
+                x++;
+            }
+
+            return result;
         }
 
-        private FieldInformation GetPlayerSegemntById(int id)
+        private Point[,] GetSegment(int x, int y)
         {
-            if (_Map.Player1 == id)
-                return FieldInformation.PlayerSegment1;
-            else if (_Map.Player2 == id)
-                return FieldInformation.PlayerSegment2;
-            else if (_Map.Player3 == id)
-                return FieldInformation.PlayerSegment3;
-            else
-                return FieldInformation.PlayerSegment4;
+            int size = 4;
+            // x,y are top left
+            // segment size is 4x4
+            Point[,] result = new Point[size, size];
+
+            // bottom left
+            x = x - size;
+            int yyy;
+            for (int xx = 0; xx < size; xx++)
+            {
+                yyy = y;
+
+                for (int yy = 0; yy < size; yy++)
+                {
+                    result[xx, yy] = new Point(x, yyy++);
+                }
+
+                x++;
+            }
+
+            return result;
         }
 
         #endregion

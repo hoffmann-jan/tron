@@ -23,7 +23,6 @@ namespace Server
                 string path = Path.Combine(Directory.GetCurrentDirectory(), "AppConfig.json");
                 string file = File.ReadAllText(path);
                 dynamic config = JsonConvert.DeserializeObject(file);
-                Globals.EofTag = config.EofTag;
                 Globals.IP = config.IP;
                 Globals.NumberOfPlayers = config.NumberOfPlayers;
                 Globals.Port = config.Port;
