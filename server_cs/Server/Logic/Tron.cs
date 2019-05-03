@@ -241,6 +241,15 @@ namespace Server.Logic
                     // detect head on head collision
                     foreach (Point pointA in headArrayA)
                     {
+                        // optimize: if headB is not in range => skip
+                        if (headB.X > (headA.X + _PlayerSize)
+                            || (headB.X + _PlayerSize) < headA.X
+
+                            || (headB.Y - _PlayerSize) > headA.Y
+                            || headB.Y < (headA.Y - _PlayerSize))
+                            break;
+
+
                         foreach (Point pointB in headArrayB)
                         {
                             // One player is jumping
@@ -266,6 +275,14 @@ namespace Server.Logic
                         foreach (Point segmentPart in playerB.Tail)
                         {
                             if (playerA.Death)
+                                break;
+
+                            // optimize: if head is not in range of segment => skip
+                            if (segmentPart.X > (headA.X + _PlayerSize)
+                                || (segmentPart.X + _PlayerSize) < headA.X
+
+                                || (segmentPart.Y - _PlayerSize) > headA.Y
+                                || segmentPart.Y < (headA.Y - _PlayerSize))
                                 break;
 
                             var segmentArray = GetSegment(segmentPart.X, segmentPart.Y);
