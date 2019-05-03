@@ -61,8 +61,12 @@ namespace Server
             _Tron.StopGameLoop();
             _ServerState = State.Winner;
 
-            Thread.Sleep(7000);
-            SendLobbyMessage(null);
+            Thread.Sleep(3000);
+            SendLobbyMessage(null, true);
+            foreach (var client in Clients)
+            {
+                client.Value.Ready = false;
+            }
 
             _ServerState = State.Lobby;
         }

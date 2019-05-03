@@ -7,6 +7,9 @@ using System.Threading;
 using Server.Enum;
 using Server.Logic.Event;
 using Server.Protocol;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 
 namespace Server.Logic
 {
@@ -216,8 +219,49 @@ namespace Server.Logic
                 winner = lastManStanding.Player.Id;
             else
                 winner = _Players.First(ep => ep.Length ==_Players.Select(p => p.Length).Max()).Player.Id;
-
+#if DEBUG
+            DrawStateAndSave();
+#endif
             GameEnded?.Invoke(new GameEndedArguments(winner));
+        }
+
+        private void DrawStateAndSave()
+        {
+            try
+            {
+                Bitmap bitmap = new Bitmap(500, 500, PixelFormat.Format32bppArgb);
+
+                for (int x = 0; x < 500; x++)
+                {
+                    for (int y = 0; y < 500; y++)
+                    {
+                        bitmap.SetPixel(x, y, Color.DimGray);
+                    }
+                }
+
+                foreach (var player in _Players)
+                {
+                    Color color = Color.FromArgb(player.Player.Color);
+
+                    foreach (Point point in GetFrame(player.Player.Position.X, player.Player.Position.Y, _PlayerSize))
+                    {
+                        bitmap.SetPixel(point.X, point.Y, color);
+                    }
+
+                    foreach (var tail in player.Tail)
+                    {
+                        foreach (var f in GetFrame(tail.X, tail.Y, _SegmentSize))
+                        {
+                            bitmap.SetPixel(f.X, f.Y, Color.Red);
+                        }
+                    }
+                }
+
+
+
+                bitmap.Save(Path.Combine(Directory.GetCurrentDirectory(), "snapshot.png"), ImageFormat.Png);
+            } catch (Exception ex)
+            { Console.WriteLine(ex.Message); }
         }
 
         private void DetectCollisions()
@@ -232,44 +276,46 @@ namespace Server.Logic
 
                 foreach (var playerB in _Players)
                 {
-                    if (playerA.Equals(playerB))
-                        continue;
 
                     if (playerB.Death)
                         continue;
 
                     var headA = playerA.Player.Position;
-                    var headArrayA = GetPlayerHead(headA.X, headA.Y);
+                    var headArrayA = GetFrame(headA.X, headA.Y, _PlayerSize);
 
-                    var headB = playerB.Player.Position;
-                    var headArrayB = GetPlayerHead(headB.X, headB.Y);
-
-                    // detect head on head collision
-                    foreach (Point pointA in headArrayA)
+                    // if player a and B are the same, only detect collisions with the own tail
+                    if (!playerA.Equals(playerB))
                     {
-                        // optimize: if headB is not in range => skip
-                        if (headB.X > (headA.X + _PlayerSize)
-                            || (headB.X + _PlayerSize) < headA.X
+                        var headB = playerB.Player.Position;
+                        var headArrayB = GetFrame(headB.X, headB.Y, _PlayerSize);
 
-                            || (headB.Y - _PlayerSize) > headA.Y
-                            || headB.Y < (headA.Y - _PlayerSize))
-                            break;
-
-
-                        foreach (Point pointB in headArrayB)
+                        // detect head on head collision
+                        foreach (Point pointA in headArrayA)
                         {
-                            // One player is jumping
-                            if (((playerA.Jumping > 0) && !(playerB.Jumping > 0))
-                                || ((playerB.Jumping > 0) && !(playerA.Jumping > 0)))
+                            // optimize: if headB is not in range => skip
+                            if (headB.X > (headA.X + _PlayerSize)
+                                || (headB.X + _PlayerSize) < headA.X
+
+                                || (headB.Y - _PlayerSize) > headA.Y
+                                || headB.Y < (headA.Y - _PlayerSize))
                                 break;
 
-                            if (pointA.X == pointB.X 
-                                && pointA.Y == pointB.Y)
+
+                            foreach (Point pointB in headArrayB)
                             {
-                                // head on head => both players killed
-                                IAmKilled(playerA.Player.Id);
-                                IAmKilled(playerB.Player.Id);
-                                break;
+                                // One player is jumping
+                                if (((playerA.Jumping > 0) && !(playerB.Jumping > 0))
+                                    || ((playerB.Jumping > 0) && !(playerA.Jumping > 0)))
+                                    break;
+
+                                if (pointA.X == pointB.X
+                                    && pointA.Y == pointB.Y)
+                                {
+                                    // head on head => both players killed
+                                    IAmKilled(playerA.Player.Id);
+                                    IAmKilled(playerB.Player.Id);
+                                    break;
+                                }
                             }
                         }
                     }
@@ -289,9 +335,9 @@ namespace Server.Logic
 
                                 || (segmentPart.Y - _PlayerSize) > headA.Y
                                 || segmentPart.Y < (headA.Y - _PlayerSize))
-                                break;
+                                continue;
 
-                            var segmentArray = GetSegment(segmentPart.X, segmentPart.Y);
+                            var segmentArray = GetFrame(segmentPart.X, segmentPart.Y, _SegmentSize);
                             foreach (Point head in headArrayA)
                             {
                                 if (playerA.Death)
@@ -330,11 +376,6 @@ namespace Server.Logic
                 foreach (var player in _Players)
                 {
                     player.Length++;
-
-                    if (player.Jumping > 0)
-                        player.Player.Position.Jumping = true;
-                    else
-                        player.Player.Position.Jumping = false;
                 }
             }
 
@@ -364,7 +405,12 @@ namespace Server.Logic
                 if (player.Death)
                     continue;
 
-                player.Tail.Enqueue(new Point(player.Player.Position.X, player.Player.Position.Y));
+                if (player.Jumping > 0)
+                    player.Player.Position.Jumping = true;
+                else
+                    player.Player.Position.Jumping = false;
+
+                player.Tail.Enqueue(new Point(player.Player.Position.X + ((_PlayerSize - _SegmentSize) / 2), player.Player.Position.Y - ((_PlayerSize - _SegmentSize) / 2)));
 
                 switch (player.Direction)
                 {
@@ -405,45 +451,23 @@ namespace Server.Logic
             return pos;
         }
 
-        private List<Point> GetPlayerHead(int x, int y)
+        private List<Point> GetFrame(int x, int y, int size)
         {
             // x,y are top left
-            // player size is _PlayerSize x _PlayerSize
+            // segment size is size x size
             // only gets the frame
             List<Point> result = new List<Point>();
 
-            for (int ix = 0; ix < _PlayerSize; ix++)
+            for (int ix = 0; ix < size; ix++)
             {
                 result.Add(new Point(x + ix, y));
-                result.Add(new Point(x + ix, y - _PlayerSize));
+                result.Add(new Point(x + ix, y - (size - 1)));
             }
 
-            for (int iy = 1; iy < _PlayerSize; iy++)
+            for (int iy = 1; iy < size - 1; iy++)
             {
-                result.Add(new Point(x, iy));
-                result.Add(new Point(x + _PlayerSize, iy));
-            }
-
-            return result;
-        }
-
-        private List<Point> GetSegment(int x, int y)
-        {
-            // x,y are top left
-            // segment size is _SegmentSize x _SegmentSize
-            // only gets the frame
-            List<Point> result = new List<Point>();
-
-            for (int ix = 0; ix < _SegmentSize; ix++)
-            {
-                result.Add(new Point(x + ix, y));
-                result.Add(new Point(x + ix, y - _SegmentSize));
-            }
-
-            for (int iy = 1; iy < _SegmentSize; iy++)
-            {
-                result.Add(new Point(x, iy));
-                result.Add(new Point(x + _SegmentSize, iy));
+                result.Add(new Point(x, y - iy));
+                result.Add(new Point(x + size - 1, y - iy));
             }
 
             return result;

@@ -23,7 +23,7 @@ namespace Server.Tcp
 
             int bytesToRead = 0, nextReadCount = 0, rc = 0;
             byte[] byteCount = BitConverter.GetBytes(1024);
-            byte[] receiveBuffer = new byte[1024];
+            byte[] receiveBuffer = new byte[4096];
 
             while (true)
             {
