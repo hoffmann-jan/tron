@@ -202,8 +202,8 @@ public class GameController implements Processor<Message, GameMessage> {
 		for (Player player : message.getPlayers()) {
 			Queue<Position> playerTail = this.playerModels.get(player);
 			Position position = new Position();
-			position.setX(player.getPosition().getX());
-			position.setY(player.getPosition().getY());
+			position.setX(player.getPosition().getX() + PLAYER_SIZE / 2);
+			position.setY(player.getPosition().getY() + PLAYER_SIZE / 2);
 			playerTail.add(position);
 			
 			while (playerTail.size() > lenght) {

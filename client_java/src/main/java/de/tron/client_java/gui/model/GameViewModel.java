@@ -45,18 +45,11 @@ public class GameViewModel {
 
 	private List<Rectangle> tailToRectangles(int color, Queue<Position> tail) {
 		List<Rectangle> rectangels = new ArrayList<>();
-		int size = tail.size();
-		int counter = size;
 		for (Position position : tail) {
-			double opacity = (1 - ((double) counter / size)) / 10;
-			opacity = counter == size ? 1 : opacity;
 			Rectangle rectangel = new Rectangle();
 			rectangel.setX(position.getX());
 			rectangel.setY(position.getY());
-			rectangel.setWidth(GameController.PLAYER_SIZE);
-			rectangel.setHeight(GameController.PLAYER_SIZE);
-			rectangel.setFill(Color.web(String.format("0x%06X", color), opacity));
-			counter--;
+			rectangel.setFill(Color.web(String.format("0x%06X", color)));
 			rectangels.add(rectangel);
 		}
 		return rectangels;
