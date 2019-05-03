@@ -13,14 +13,16 @@ namespace Server
         public Direction Direction { get; set; }
         public bool Death { get; set; }
         public int Length { get; set; }
-        public List<Point> Tail { get; set; }
+        public Queue<Point> Tail { get; set; }
+        public short Jumping { get; set; }
 
         public ExtendedPlayer(Player player)
         {
-            Tail = new List<Point>();
+            Tail = new Queue<Point>();
             Player = player;
             Direction = Direction.Left;
             Death = false;
+            Jumping = 0;
         }
     }
 }

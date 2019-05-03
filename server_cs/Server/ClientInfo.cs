@@ -1,5 +1,4 @@
 ﻿using System.Net.Sockets;
-using System.Text;
 using Server.Protocol;
 
 namespace Server
@@ -10,7 +9,6 @@ namespace Server
     public class ClientInfo
     {
         #region Fields
-        private StateObject _StateObject;
         #endregion
 
         #region Properties

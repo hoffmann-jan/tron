@@ -25,6 +25,9 @@ namespace Server.Logic
         Random _Random = new Random();
         int _FramesToNextTail = 20;
         int _Length = 0;
+        byte _PlayerSize = 10;
+        byte _SegmentSize = 10;
+        byte _JumpLength = 16;
 
         List<ExtendedPlayer> _Players;
         private byte _Starter = 0;
@@ -117,7 +120,11 @@ namespace Server.Logic
                     player.Direction = Direction.Down;
                     break;
                 case Protocol.Action.ACT_JUMP:
-                    player.Player.Position.Jumping = true;
+                    if (player.Jumping == 0)
+                    {
+                        player.Jumping = _JumpLength;
+                        player.Player.Position.Jumping = true;
+                    }
                     break;
                 case Protocol.Action.ACT_LEFT:
                     if (player.Direction == Direction.Right)
@@ -135,6 +142,7 @@ namespace Server.Logic
                     player.Direction = Direction.Up;
                     break;
             }
+
         }
         #endregion
 
@@ -156,12 +164,19 @@ namespace Server.Logic
         private void Broadcast(Protocol.Type type = Protocol.Type.TYPE_UPDATE)
         {
             // Create snapshot.
-            Protocol.Protocol protocol = new Protocol.Protocol();
-            protocol.Type = type;
-            protocol.Length = _Length;
+            Protocol.Protocol protocol = new Protocol.Protocol
+            {
+                Type = type,
+                Length = _Length
+            };
 
             foreach (ExtendedPlayer player in _Players)
             {
+                if (player.Jumping > 0)
+                    player.Player.Position.Jumping = true;
+                else
+                    player.Player.Position.Jumping = false;
+
                 protocol.Players.Add(player.Player);
             }
 
@@ -181,13 +196,11 @@ namespace Server.Logic
 
             bool end = false;
 
-            double previous = GetCurrentTime();
-
             while (!end)
             {
                 Thread.Sleep((int)FramesPerMillisecond);
                 Update();
-                //end = CheckGameEnd();
+                end = CheckGameEnd();
                 Broadcast();
             }
 
@@ -208,7 +221,7 @@ namespace Server.Logic
                 if (playerA.Death)
                     continue;
 
-                if (playerA.Player.Position.Jumping)
+                if (playerA.Jumping > 0)
                     continue;
 
                 foreach (var playerB in _Players)
@@ -219,34 +232,61 @@ namespace Server.Logic
                     if (playerB.Death)
                         continue;
 
-                    var head = playerA.Player.Position;
+                    var headA = playerA.Player.Position;
+                    var headArrayA = GetPlayerHead(headA.X, headA.Y);
+
+                    var headB = playerB.Player.Position;
+                    var headArrayB = GetPlayerHead(headB.X, headB.Y);
 
                     // detect head on head collision
-                    if (head.X == playerB.Player.Position.X
-                        && head.Y == playerB.Player.Position.Y)
+                    foreach (Point pointA in headArrayA)
                     {
-                        // One player is jumping
-                        if ((playerA.Player.Position.Jumping && !playerB.Player.Position.Jumping)
-                            || (playerB.Player.Position.Jumping && !playerA.Player.Position.Jumping))
-                            continue;
-                        else
+                        foreach (Point pointB in headArrayB)
                         {
-                            IAmKilled(playerA.Player.Id);
-                            IAmKilled(playerB.Player.Id);
-                            break;
+                            // One player is jumping
+                            if (((playerA.Jumping > 0) && !(playerB.Jumping > 0))
+                                || ((playerB.Jumping > 0) && !(playerA.Jumping > 0)))
+                                break;
+
+                            if (pointA.X == pointB.X 
+                                && pointA.Y == pointB.Y)
+                            {
+                                // head on head => both players killed
+                                IAmKilled(playerA.Player.Id);
+                                IAmKilled(playerB.Player.Id);
+                                break;
+                            }
                         }
                     }
 
                     // detect head on tail collision
-                    foreach (Point point in playerB.Tail)
+                    // player has tail
+                    if (playerB.Length > _PlayerSize)
                     {
-                        if (head.X == point.X
-                            && head.Y == point.Y)
+                        foreach (Point segmentPart in playerB.Tail)
                         {
-                            IAmKilled(playerA.Player.Id);
-                            break;
+                            if (playerA.Death)
+                                break;
+
+                            var segmentArray = GetSegment(segmentPart.X, segmentPart.Y);
+                            foreach (Point head in headArrayA)
+                            {
+                                if (playerA.Death)
+                                    break;
+
+                                foreach (Point segmentPoint in segmentArray)
+                                {
+                                    if (segmentPoint.X == head.X
+                                        && segmentPoint.Y == head.Y)
+                                    {
+                                        IAmKilled(playerA.Player.Id);
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
+
                 }
             }
         }
@@ -262,26 +302,19 @@ namespace Server.Logic
             if (_FramesToNextTail == 0)
             {
                 _FramesToNextTail = _Random.Next(5, 26);
-                AddTailSegment();
-            }
-        }
+                _Length++;
 
-        private void AddTailSegment()
-        {
-            _Length++;
-            foreach(var player in _Players)
-            {
-                if (player.Tail.Count == 0)
+                foreach (var player in _Players)
                 {
-                    Point t = new Point(player.Player.Position.X, player.Player.Position.Y);
-                    player.Tail.Add(t);
-                }
-                else
-                {
-                    var lastTail = player.Tail.Last();
-                    Point t = new Point(lastTail.X, lastTail.Y);
+                    player.Length++;
+
+                    if (player.Jumping > 0)
+                        player.Player.Position.Jumping = true;
+                    else
+                        player.Player.Position.Jumping = false;
                 }
             }
+
         }
 
         private bool CheckGameEnd()
@@ -308,6 +341,8 @@ namespace Server.Logic
                 if (player.Death)
                     continue;
 
+                player.Tail.Enqueue(new Point(player.Player.Position.X, player.Player.Position.Y));
+
                 switch (player.Direction)
                 {
                     case Direction.Down:
@@ -327,6 +362,14 @@ namespace Server.Logic
                         player.Player.Position.Y = Teleport(player.Player.Position.Y);
                         break;
                 }
+
+                while (player.Tail.Count > _Length)
+                {
+                    player.Tail.Dequeue();
+                }
+
+                if (player.Jumping > 0)
+                    player.Jumping--;
             }
         }
 
@@ -341,19 +384,18 @@ namespace Server.Logic
 
         private Point[,] GetPlayerHead(int x, int y)
         {
-            int size = 10;
             // x,y are top left
             // player size is 10x10
-            Point[,] result = new Point[size, size];
+            Point[,] result = new Point[_PlayerSize, _PlayerSize];
 
             // bottom left
-            x = x - size;
+            x = x - _PlayerSize;
             int yyy;
-            for (int xx = 0; xx < size; xx++)
+            for (int xx = 0; xx < _PlayerSize; xx++)
             {
                 yyy = y;
 
-                for (int yy = 0; yy < size; yy++)
+                for (int yy = 0; yy < _PlayerSize; yy++)
                 {
                     result[xx, yy] = new Point(x, yyy++);
                 }
@@ -366,19 +408,18 @@ namespace Server.Logic
 
         private Point[,] GetSegment(int x, int y)
         {
-            int size = 4;
             // x,y are top left
             // segment size is 4x4
-            Point[,] result = new Point[size, size];
+            Point[,] result = new Point[_SegmentSize, _SegmentSize];
 
             // bottom left
-            x = x - size;
+            x = x - _SegmentSize;
             int yyy;
-            for (int xx = 0; xx < size; xx++)
+            for (int xx = 0; xx < _SegmentSize; xx++)
             {
                 yyy = y;
 
-                for (int yy = 0; yy < size; yy++)
+                for (int yy = 0; yy < _SegmentSize; yy++)
                 {
                     result[xx, yy] = new Point(x, yyy++);
                 }

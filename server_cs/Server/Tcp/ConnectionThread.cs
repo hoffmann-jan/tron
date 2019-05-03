@@ -66,7 +66,7 @@ namespace Server.Tcp
                     catch (Exception ex)
                     {
                         protocol = null;
-                        Console.Error.WriteLineAsync(ex.Message);
+                        Console.Error.WriteLineAsync($"JSON deserialize ERROR: '{ex.Message}'.");
                     }
 
                     if (protocol != null)
