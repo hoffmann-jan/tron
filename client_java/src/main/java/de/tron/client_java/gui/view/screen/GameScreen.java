@@ -10,6 +10,7 @@ import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
 import javafx.util.Duration;
 
 public class GameScreen extends Canvas implements Screen {
@@ -30,7 +31,37 @@ public class GameScreen extends Canvas implements Screen {
 		GraphicsContext context = getGraphicsContext2D();
 		context.clearRect(0, 0, getWidth(), getHeight());
 		this.playerRectangels.forEach(r -> drawRectangel(r, context));
-		this.playerTails.forEach(r -> drawRectangel(r, context));
+		drawPlayerTails(context);
+		
+	}
+
+	private void drawPlayerTails(GraphicsContext context) {
+		Rectangle start = this.playerTails.get(0);
+		Rectangle previous = new Rectangle();
+		Color color = start.getFill().deriveColor(0, 1, 1, 0.2);
+		
+		context.beginPath();
+		context.moveTo(start.getX(), start.getY());
+		this.playerTails.forEach(r -> {
+			drawNextPoint(r, previous, context);
+			previous.setX(r.getX());
+			previous.setY(r.getY());
+		});
+		context.setStroke(color);
+		context.setLineWidth(5);
+		context.stroke();		
+	}
+
+	private void drawNextPoint(Rectangle rectangle, Rectangle previous, GraphicsContext context) {
+		if (previous != null) {
+			double diffX = Math.abs(rectangle.getX() - previous.getX());
+			double diffY = Math.abs(rectangle.getY() - previous.getY());
+			if (diffX > 100 || diffY > 100) {
+				context.moveTo(rectangle.getX(), rectangle.getY());
+				return;
+			}
+		}
+		context.lineTo(rectangle.getX(), rectangle.getY());
 	}
 
 	private void drawRectangel(Rectangle rectangel, GraphicsContext context) {
