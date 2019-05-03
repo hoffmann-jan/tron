@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -9,6 +8,7 @@ using System.Text;
 using System.Threading;
 
 using Newtonsoft.Json;
+using Server.Enum;
 using Server.Logic;
 using Server.Logic.Event;
 using Server.Protocol;
@@ -27,8 +27,9 @@ namespace Server
         /// </summary>
         private static int _NextPlayerId = 0;
 
+        private static State _ServerState;
         private static TcpListener _Server;
-        private static Tron Tron;
+        private static Tron _Tron;
         #endregion
 
         #region Properties
@@ -41,10 +42,11 @@ namespace Server
         public static void StartTronServer(IPAddress ipAddress, int port)
         {
             Clients = new ConcurrentDictionary<int, ClientInfo>();
-            Tron = new Tron(Convert.ToInt32(Properties.Resources.FieldSize));
-            Tron.SnapshotCreated += Tron_SnapshotCreated;
-            Tron.PlayerDied += Tron_PlayerDied;
-            Tron.GameEnded += Tron_GameEnded;
+            _Tron = new Tron(Convert.ToInt32(Properties.Resources.FieldSize));
+            _Tron.SnapshotCreated += Tron_SnapshotCreated;
+            _Tron.PlayerDied += Tron_PlayerDied;
+            _Tron.GameEnded += Tron_GameEnded;
+            _ServerState = State.Lobby;
             StartListening(ipAddress, port);
         }
 
@@ -56,6 +58,13 @@ namespace Server
             protocol.Players.Add(winner.Player);
 
             Broadcast(protocol);
+            _Tron.StopGameLoop();
+            _ServerState = State.Winner;
+
+            Thread.Sleep(7000);
+            SendLobbyMessage(null);
+
+            _ServerState = State.Lobby;
         }
 
         /// <summary>
@@ -99,7 +108,7 @@ namespace Server
 
                     // Init player
                     Console.WriteLine($"Player: {protocol.Players.First().Name} joined.");
-                    Tron.RegisterPlayer(clientInfo.Player);
+                    _Tron.RegisterPlayer(clientInfo.Player);
                     protocol.Players = new List<Player>();
                     protocol.Players.Add(clientInfo.Player);
                     protocol.Type = Protocol.Type.TYPE_CONNECT;
@@ -108,14 +117,14 @@ namespace Server
                     Send(client, protocol);
 
                     // Lobby
-                    SendLobbyMessage(client, clientInfo);
+                    SendLobbyMessage(clientInfo);
                     break;
 
                 case Protocol.Type.TYPE_ACTION:
                     // Process action
                     var clients = Clients.ToList();
                     int id = clients.First(kv => kv.Value.TcpClient.Equals(client)).Key;
-                    Tron.ProcessInput(protocol, id);
+                    _Tron.ProcessInput(protocol, id);
                     break;
 
                 case Protocol.Type.TYPE_READY:
@@ -125,7 +134,7 @@ namespace Server
                     if (Clients.Any(c => c.Value.Ready != true))
                         break;
 
-                    Tron.StartGameLoop();
+                    _Tron.StartGameLoop();
                     break;
 
                 case Protocol.Type.TYPE_DISCONNECT:
@@ -193,28 +202,49 @@ namespace Server
             Console.ReadLine();
         }
 
-        private static void SendLobbyMessage(TcpClient client, ClientInfo clientInfo)
+        private static void SendLobbyMessage(ClientInfo clientInfo, bool all = false)
         {
-            var others = Clients.Where(o => o.Key != clientInfo.Player.Id);
+            IEnumerable<KeyValuePair<int, ClientInfo>> others = null;
+            if (!all)
+                others = Clients.Where(o => o.Key != clientInfo.Player.Id);
 
             // inform client
             Protocol.Protocol lobbyProtocol = new Protocol.Protocol();
             lobbyProtocol.Type = Protocol.Type.TYPE_LOBBY;
-            lobbyProtocol.LobbyId = clientInfo.LobbyId;
-            foreach(var other in others)
+            if (all)
+                lobbyProtocol.LobbyId = 1337;
+            else
+                lobbyProtocol.LobbyId = clientInfo.LobbyId;
+
+            if (all)
             {
-                lobbyProtocol.Players.Add(other.Value.Player);
+                foreach (var client in Clients)
+                {
+                    lobbyProtocol.Players.Add(client.Value.Player);
+                }
+
+                foreach (var client in Clients)
+                {
+                    Send(client.Value.TcpClient, lobbyProtocol); 
+                }
             }
-            Send(client, lobbyProtocol);
-
-            // inform others
-            Protocol.Protocol addProtocol = new Protocol.Protocol();
-            addProtocol.Type = Protocol.Type.TYPE_ADD;
-            addProtocol.Players.Add(clientInfo.Player);
-
-            foreach(var other in others)
+            else
             {
-                Send(other.Value.TcpClient, addProtocol);
+                foreach (var other in others)
+                {
+                    lobbyProtocol.Players.Add(other.Value.Player);
+                }
+                Send(clientInfo.TcpClient, lobbyProtocol);
+
+                // inform others
+                Protocol.Protocol addProtocol = new Protocol.Protocol();
+                addProtocol.Type = Protocol.Type.TYPE_ADD;
+                addProtocol.Players.Add(clientInfo.Player);
+
+                foreach (var other in others)
+                {
+                    Send(other.Value.TcpClient, addProtocol);
+                }
             }
         }
 

@@ -16,7 +16,7 @@ namespace Server.Logic
     public class Tron
     {
         #region fields
-        private const double FramesPerMillisecond = 1000d / 60d;
+        private const double FramesPerMillisecond = 1000d / 30d;
         /// <summary>
         /// Size of the quadratic field.
         /// </summary>
@@ -24,10 +24,11 @@ namespace Server.Logic
 
         Random _Random = new Random();
         int _FramesToNextTail = 20;
-        int _Length = 0;
+        int _Length = 1;
         byte _PlayerSize = 10;
-        byte _SegmentSize = 10;
+        byte _SegmentSize = 5;
         byte _JumpLength = 16;
+        byte _MoveSpeed = 3;
 
         List<ExtendedPlayer> _Players;
         private byte _Starter = 0;
@@ -67,22 +68,22 @@ namespace Server.Logic
             switch (_Starter)
             {
                 case 0:
-                    position.X = halfSize + 5;
+                    position.X = halfSize + (_PlayerSize / 2);
                     position.Y = 0;
                     extendedPlayer.Direction = Direction.Up;
                     break;
                 case 1:
-                    position.X = 10;
-                    position.Y = halfSize - 5;
+                    position.X = _PlayerSize;
+                    position.Y = halfSize - (_PlayerSize / 2);
                     extendedPlayer.Direction = Direction.Right;
                     break;
                 case 2:
-                    position.X = _FliedSize - 10;
-                    position.Y = halfSize - 5;
+                    position.X = _FliedSize - _PlayerSize;
+                    position.Y = halfSize - (_PlayerSize / 2);
                     extendedPlayer.Direction = Direction.Left;
                     break;
                 case 3:
-                    position.X = halfSize + 5;
+                    position.X = halfSize + (_PlayerSize / 2);
                     position.Y = _FliedSize;
                     extendedPlayer.Direction = Direction.Down;
                     break;
@@ -101,6 +102,11 @@ namespace Server.Logic
         public void StartGameLoop()
         {
             Task gameThread = Task.Run(() => GameLoop(), _CancellationTokenSource.Token);
+        }
+
+        public void StopGameLoop()
+        {
+            _CancellationTokenSource.Cancel();
         }
 
         /// <summary>
@@ -363,19 +369,19 @@ namespace Server.Logic
                 switch (player.Direction)
                 {
                     case Direction.Down:
-                        player.Player.Position.Y += 1;
+                        player.Player.Position.Y += _MoveSpeed;
                         player.Player.Position.Y = Teleport(player.Player.Position.Y);
                         break;
                     case Direction.Left:
-                        player.Player.Position.X -= 1;
+                        player.Player.Position.X -= _MoveSpeed;
                         player.Player.Position.X = Teleport(player.Player.Position.X);
                         break;
                     case Direction.Right:
-                        player.Player.Position.X += 1;
+                        player.Player.Position.X += _MoveSpeed;
                         player.Player.Position.X = Teleport(player.Player.Position.X);
                         break;
                     case Direction.Up:
-                        player.Player.Position.Y -= 1;
+                        player.Player.Position.Y -= _MoveSpeed;
                         player.Player.Position.Y = Teleport(player.Player.Position.Y);
                         break;
                 }
@@ -399,49 +405,45 @@ namespace Server.Logic
             return pos;
         }
 
-        private Point[,] GetPlayerHead(int x, int y)
+        private List<Point> GetPlayerHead(int x, int y)
         {
             // x,y are top left
-            // player size is 10x10
-            Point[,] result = new Point[_PlayerSize, _PlayerSize];
+            // player size is _PlayerSize x _PlayerSize
+            // only gets the frame
+            List<Point> result = new List<Point>();
 
-            // bottom left
-            x = x - _PlayerSize;
-            int yyy;
-            for (int xx = 0; xx < _PlayerSize; xx++)
+            for (int ix = 0; ix < _PlayerSize; ix++)
             {
-                yyy = y;
+                result.Add(new Point(x + ix, y));
+                result.Add(new Point(x + ix, y - _PlayerSize));
+            }
 
-                for (int yy = 0; yy < _PlayerSize; yy++)
-                {
-                    result[xx, yy] = new Point(x, yyy++);
-                }
-
-                x++;
+            for (int iy = 1; iy < _PlayerSize; iy++)
+            {
+                result.Add(new Point(x, iy));
+                result.Add(new Point(x + _PlayerSize, iy));
             }
 
             return result;
         }
 
-        private Point[,] GetSegment(int x, int y)
+        private List<Point> GetSegment(int x, int y)
         {
             // x,y are top left
-            // segment size is 4x4
-            Point[,] result = new Point[_SegmentSize, _SegmentSize];
+            // segment size is _SegmentSize x _SegmentSize
+            // only gets the frame
+            List<Point> result = new List<Point>();
 
-            // bottom left
-            x = x - _SegmentSize;
-            int yyy;
-            for (int xx = 0; xx < _SegmentSize; xx++)
+            for (int ix = 0; ix < _SegmentSize; ix++)
             {
-                yyy = y;
+                result.Add(new Point(x + ix, y));
+                result.Add(new Point(x + ix, y - _SegmentSize));
+            }
 
-                for (int yy = 0; yy < _SegmentSize; yy++)
-                {
-                    result[xx, yy] = new Point(x, yyy++);
-                }
-
-                x++;
+            for (int iy = 1; iy < _SegmentSize; iy++)
+            {
+                result.Add(new Point(x, iy));
+                result.Add(new Point(x + _SegmentSize, iy));
             }
 
             return result;
