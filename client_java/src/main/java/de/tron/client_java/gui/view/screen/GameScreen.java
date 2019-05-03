@@ -1,12 +1,16 @@
 package de.tron.client_java.gui.view.screen;
 
+import java.util.List;
+
 import de.tron.client_java.gui.model.GameViewModel;
 import de.tron.client_java.gui.model.Rectangle;
 import javafx.animation.FadeTransition;
 import javafx.animation.Transition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ListProperty;
+import javafx.beans.property.MapProperty;
 import javafx.beans.property.SimpleListProperty;
+import javafx.beans.property.SimpleMapProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -18,7 +22,7 @@ public class GameScreen extends Canvas implements Screen {
 	private GameViewModel viewModel;
 		
 	private final ListProperty<Rectangle> playerRectangels = new SimpleListProperty<>(FXCollections.observableArrayList());
-	private final ListProperty<Rectangle> playerTails = new SimpleListProperty<>(FXCollections.observableArrayList());
+	private final MapProperty<Integer, List<Rectangle>> playerTails = new SimpleMapProperty<>(FXCollections.observableHashMap());
 	
 	private void update(BooleanProperty updatesExistProperty) {
 		if (updatesExistProperty.get()) {
@@ -36,20 +40,26 @@ public class GameScreen extends Canvas implements Screen {
 	}
 
 	private void drawPlayerTails(GraphicsContext context) {
-		Rectangle start = this.playerTails.get(0);
+		this.playerTails.values().forEach(l -> drawPlayerTail(l, context));		
+	}
+	
+	private void drawPlayerTail(List<Rectangle> tail, GraphicsContext context) {
+		Rectangle start = tail.get(0);
 		Rectangle previous = new Rectangle();
 		Color color = start.getFill().deriveColor(0, 1, 1, 0.2);
 		
 		context.beginPath();
 		context.moveTo(start.getX(), start.getY());
-		this.playerTails.forEach(r -> {
+		
+		tail.forEach(r -> {
 			drawNextPoint(r, previous, context);
 			previous.setX(r.getX());
 			previous.setY(r.getY());
 		});
+		
 		context.setStroke(color);
 		context.setLineWidth(5);
-		context.stroke();		
+		context.stroke();
 	}
 
 	private void drawNextPoint(Rectangle rectangle, Rectangle previous, GraphicsContext context) {
