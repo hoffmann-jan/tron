@@ -36,6 +36,7 @@ namespace Server.Logic
         List<ExtendedPlayer> _Players;
         private byte _Starter = 0;
         CancellationTokenSource _CancellationTokenSource;
+        Point _LastCollisionPoint;
         #endregion
 
         #region properties
@@ -227,6 +228,9 @@ namespace Server.Logic
 
         private void DrawStateAndSave()
         {
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+                return;
+
             try
             {
                 Bitmap bitmap = new Bitmap(500, 500, PixelFormat.Format32bppArgb);
@@ -257,9 +261,19 @@ namespace Server.Logic
                     }
                 }
 
+                // Draw last collision
+                Color colour = Color.Coral;
+                bitmap.SetPixel(_LastCollisionPoint.X, _LastCollisionPoint.Y, colour);
+                bitmap.SetPixel(_LastCollisionPoint.X + 1, _LastCollisionPoint.Y + 1, colour);
+                bitmap.SetPixel(_LastCollisionPoint.X + 2, _LastCollisionPoint.Y + 2, colour);
+                bitmap.SetPixel(_LastCollisionPoint.X + 1, _LastCollisionPoint.Y - 1, colour);
+                bitmap.SetPixel(_LastCollisionPoint.X + 2, _LastCollisionPoint.Y - 2, colour);
+                bitmap.SetPixel(_LastCollisionPoint.X - 1, _LastCollisionPoint.Y + 1, colour);
+                bitmap.SetPixel(_LastCollisionPoint.X - 2, _LastCollisionPoint.Y + 2, colour);
+                bitmap.SetPixel(_LastCollisionPoint.X - 1, _LastCollisionPoint.Y - 1, colour);
+                bitmap.SetPixel(_LastCollisionPoint.X - 2, _LastCollisionPoint.Y - 2, colour);
 
-
-                bitmap.Save(Path.Combine(Directory.GetCurrentDirectory(), "snapshot.png"), ImageFormat.Png);
+                bitmap.Save(Path.Combine(Directory.GetCurrentDirectory(), $"snapshot{DateTime.Now.ToString("yyyyMMddHHmmss")}.png"), ImageFormat.Png);
             } catch (Exception ex)
             { Console.WriteLine(ex.Message); }
         }
@@ -314,6 +328,7 @@ namespace Server.Logic
                                     // head on head => both players killed
                                     IAmKilled(playerA.Player.Id);
                                     IAmKilled(playerB.Player.Id);
+                                    _LastCollisionPoint = pointA;
                                     break;
                                 }
                             }
@@ -349,6 +364,7 @@ namespace Server.Logic
                                         && segmentPoint.Y == head.Y)
                                     {
                                         IAmKilled(playerA.Player.Id);
+                                        _LastCollisionPoint = head;
                                         break;
                                     }
                                 }
