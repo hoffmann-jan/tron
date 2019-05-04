@@ -249,14 +249,14 @@ namespace Server.Logic
 
                     foreach (Point point in GetFrame(player.Player.Position.X, player.Player.Position.Y, _PlayerSize))
                     {
-                        bitmap.SetPixel(point.X, point.Y, color);
+                        bitmap.SetPixel(SetPixel(point.X), SetPixel(point.Y), color);
                     }
 
                     foreach (var tail in player.Tail)
                     {
                         foreach (var f in GetFrame(tail.X, tail.Y, _SegmentSize))
                         {
-                            bitmap.SetPixel(f.X, f.Y, Color.Red);
+                            bitmap.SetPixel(SetPixel(f.X), SetPixel(f.Y), Color.Red);
                         }
                     }
                 }
