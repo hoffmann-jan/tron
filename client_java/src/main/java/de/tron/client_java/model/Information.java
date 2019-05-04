@@ -7,5 +7,5 @@ public enum Information {
 	RESULT,
 	START, 
 	REFUSED,
-	NEW_PLAYER;	
+	PLAYER_CHANGE;	
 }

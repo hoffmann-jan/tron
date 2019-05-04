@@ -1,0 +1,68 @@
+#title {
+	-fx-font-family: 'TR2N';
+	-fx-font-weight: bold;
+	-fx-font-size: 30.0;
+	-fx-text-fill: rgb(255.0,103.0,0.0);
+}
+
+#input {
+	-fx-font-family: 'Orbitron';
+	-fx-font-size: 16.0;
+	-fx-text-fill: white;
+}
+
+.text-field, .label {
+	-fx-font-family: 'Orbitron';
+	-fx-font-size: 14.0;
+	-fx-text-fill: white;
+}
+
+.text-field, .color-picker {
+	-fx-border-radius: 0.0;
+	-fx-background-radius: 0.0;
+	-fx-background-color: linear-gradient(from 0.0% 50.0% to 100.0% 50.0%, rgba(105.0, 255.0, 255.0, 0.3) 0.0%, transparent 100.0%);
+	-fx-border-color:	linear-gradient(from 0.0% 50.0% to 100.0% 50.0%, rgb(105.0, 255.0, 255.0) 0.0%, rgba(105.0, 255.0, 255.0, 0.0) 100.0%) 
+						transparent
+						linear-gradient(from 0.0% 50.0% to 100.0% 50.0%, rgb(105.0, 255.0, 255.0) 0.0%, rgba(105.0, 255.0, 255.0, 0.0) 100.0%) 
+						rgb(105.0, 255.0, 255.0);
+}
+
+.text-field:hover, .color-picker:hover {
+
+	-fx-background-color: linear-gradient(from 0.0% 50.0% to 100.0% 50.0%, derive(rgba(105.0, 255.0, 255.0, 0.3), -30.0%) 0.0%, transparent 100.0%);
+	-fx-border-color:	linear-gradient(from 0.0% 50.0% to 100.0% 50.0%, derive(rgb(105.0, 255.0, 255.0), -30.0%) 0.0%, transparent 100.0%) 
+						transparent
+						linear-gradient(from 0.0% 50.0% to 100.0% 50.0%, derive(rgb(105.0, 255.0, 255.0), -30.0%) 0.0%, transparent 100.0%) 
+						derive(rgb(105.0, 255.0, 255.0), -30%);
+}
+
+#connection-back {
+	-fx-fill: rgba(10.0, 10.0, 10.0, 0.5);
+}
+
+#back {
+	-fx-background-color: transparent;
+}
+
+.button {
+	 -fx-font-family: "Orbitron";
+	 -fx-font-size: 14.0;
+	 -fx-text-alignment: center;
+	 -fx-border-width: 2.0px; 
+	 -fx-border-color: rgb(105.0, 255.0, 255.0);
+	 -fx-text-fill: rgb(105.0, 255.0, 255.0);
+	 -fx-border-radius: 50.0%;
+	 -fx-background-color: transparent;
+}
+
+.button:hover {
+	 -fx-border-color: derive(rgb(105.0, 255.0, 255.0), -30.0%);
+	 -fx-text-fill:derive(rgb(105.0, 255.0, 255.0), -30.0%);
+}
+
+#status-text {
+	-fx-background-color: rgba(10.0, 10.0, 10.0, 0.5);
+	-fx-background-radius: 5 0 0 5;
+	-fx-font-size: 12.0;
+	-fx-padding: 5;
+}

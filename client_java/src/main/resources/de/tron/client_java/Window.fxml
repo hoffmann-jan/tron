@@ -12,24 +12,43 @@
 <?import de.tron.client_java.gui.view.screen.TitleScreen?>
 <?import de.tron.client_java.gui.view.screen.GameScreen?>
 <?import de.tron.client_java.gui.view.screen.ResultScreen?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.effect.BoxBlur?>
+<?import de.tron.client_java.gui.view.View?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.tron.client_java.gui.view.View">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.tron.client_java.gui.view.View" stylesheets="@Connection.css" id="back">
 	<center>
-		<AnchorPane>
-			<HBox AnchorPane.topAnchor="30" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" alignment="CENTER_RIGHT">
-				<padding>
-					<Insets right="15"/>
-				</padding>
-				<Label fx:id="statusInformation" alignment="CENTER_RIGHT"/> 
-			</HBox> 
-			<StackPane AnchorPane.topAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.bottomAnchor="0">
-				<ResultScreen visible="false" fx:id="resultScreen" />
-				<GameScreen visible="false" width="500" height="500" fx:id="gameScreen" />
-				<LobbyScreen visible="false" fx:id="lobbyScreen" maxWidth="500" maxHeight="300"/> 
-				<ConnectionScreen fx:id="connectionScreen" maxWidth="500" maxHeight="300"/>  
-				<TitleScreen fx:id="titleScreen"/>
-			</StackPane> 
-		</AnchorPane> 
+		<StackPane id="back">
+			<ImageView fitHeight="500" fitWidth="500" fx:id="background">
+				<image>
+					<Image url="@background.png" />
+				</image>
+				<effect>
+					<BoxBlur fx:id="backgroundBlur">
+						<width>
+							<View fx:constant="BLUR_STRENGTH" />
+						</width>
+						<height>
+							<View fx:constant="BLUR_STRENGTH" />
+						</height>
+					</BoxBlur>
+				</effect>
+			</ImageView> 
+			<AnchorPane id="back">
+				<StackPane AnchorPane.topAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.bottomAnchor="0" id="back">
+					<ResultScreen visible="false" fx:id="resultScreen" />
+					<GameScreen visible="false" width="500" height="500" fx:id="gameScreen" />
+					<LobbyScreen visible="false" fx:id="lobbyScreen" maxWidth="500" maxHeight="370"/> 
+					<ConnectionScreen visible="false" fx:id="connectionScreen" maxWidth="500" maxHeight="370"/>  
+					<TitleScreen fx:id="titleScreen" fitWidth="500" fitHeight="500"/>
+				</StackPane> 
+				<HBox AnchorPane.topAnchor="30" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" alignment="CENTER_RIGHT">
+					<VBox fx:id="statusInformationBox" />
+				</HBox> 
+			</AnchorPane> 
+		</StackPane>
 	</center>
 </BorderPane>
 

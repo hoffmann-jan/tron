@@ -44,6 +44,10 @@ public class GameScreen extends Canvas implements Screen {
 	}
 	
 	private void drawPlayerTail(List<Rectangle> tail, GraphicsContext context) {
+		if (tail.isEmpty()) {
+			return;
+		}
+		
 		Rectangle start = tail.get(0);
 		Rectangle previous = new Rectangle();
 		Color color = start.getFill().deriveColor(0, 1, 1, 0.2);

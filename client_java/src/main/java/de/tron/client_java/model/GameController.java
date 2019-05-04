@@ -105,6 +105,9 @@ public class GameController implements Processor<Message, GameMessage> {
 	}
 	
 	public void changeDirection(char key) {
+		if (localPlayer == null) {
+			return;
+		}
 		key = Character.toLowerCase(key);
 		Action action = null;
 		switch (key) {
@@ -146,25 +149,22 @@ public class GameController implements Processor<Message, GameMessage> {
 			case UPDATE:
 				information = getUpdateMessage();
 				// addPlayers updates the players because the old ones are replaced in the set
-				addPlayers(message);
+				updatePlayers(message);
 				updateTails(message);
 				break;
 			case DISCONNECT:
 				information = getDisconnectedMessage(message);
-				addPlayers(message);
+				removeOriginalPlayer(message);
 				break;
 			case DEAD:
 				information = getDeadMessage(message);
-				addPlayers(message);
 				break;
 			case ADD:
 				information = getAddMessage(message);
-				addPlayers(message);
 				addOriginalPlayers(message);
 				break;
 			case LOBBY:
 				information = getLobbyMessage();
-				addPlayers(message);
 				addOriginalPlayers(message);
 				break;
 			case START:
@@ -188,13 +188,19 @@ public class GameController implements Processor<Message, GameMessage> {
 		this.playerModels.put(this.localPlayer, new ConcurrentLinkedQueue<>());
 	}
 	
-	private void addPlayers(Message message) {
+	private void updatePlayers(Message message) {
 		this.updatedPlayers.clear();
 		this.updatedPlayers.addAll(message.getPlayers());
 	}
 	
 	private void addOriginalPlayers(Message message) {
 		message.getPlayers().forEach(p -> this.playerModels.put(p, new ConcurrentLinkedQueue<>()));
+	}
+	
+	private void removeOriginalPlayer(Message message) {
+		System.out.println(this.playerModels.size());
+		message.getPlayers().forEach(this.playerModels::remove);		
+		System.out.println(this.playerModels.size());
 	}
 
 	private void updateTails(Message message) {
@@ -225,7 +231,7 @@ public class GameController implements Processor<Message, GameMessage> {
 		if (disconnectedPlayer.getId() != this.localPlayer.getId()) {
 			String status = String.format("Player %s (%d) disconnected", 
 					disconnectedPlayer.getName(), disconnectedPlayer.getId());
-			return new GameMessage(status, Information.STATUS);
+			return new GameMessage(status, Information.PLAYER_CHANGE);
 		} else {
 			return new GameMessage("Couldn't join lobby", Information.REFUSED);
 		}
@@ -247,7 +253,7 @@ public class GameController implements Processor<Message, GameMessage> {
 		Player joinedPlayer = message.getPlayers().get(0);
 		String status = String.format("Player %s (%d) joined the game", 
 				joinedPlayer.getName(), joinedPlayer.getId());
-		return new GameMessage(status, Information.NEW_PLAYER);
+		return new GameMessage(status, Information.PLAYER_CHANGE);
 	}
 	
 	private GameMessage getLobbyMessage() {

@@ -15,6 +15,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
 public class LobbyScreen extends AnchorPane implements Screen {
@@ -22,6 +23,7 @@ public class LobbyScreen extends AnchorPane implements Screen {
 	@FXML private Label title;
 	@FXML private VBox playerContainer;
 	@FXML private HBox readyButtonBox;
+	@FXML private Rectangle background;
 	
 	private LobbyViewModel viewModel;
 	
@@ -39,6 +41,7 @@ public class LobbyScreen extends AnchorPane implements Screen {
 	
 	@Override
 	public Transition getTransition(boolean reverse) {
+		readyButtonBox.setDisable(false);
 		readyButtonBox.setOpacity(0);
 		Transition transition = new Transition() {
 			{
@@ -49,6 +52,9 @@ public class LobbyScreen extends AnchorPane implements Screen {
 				if (reverse) {
 					frac = Math.abs(frac - 1);
 				}
+				
+				background.setOpacity(frac);
+				AnchorPane.setLeftAnchor(background, frac * 80);
 				
 				title.setOpacity(Math.min(1, frac * 2));
 				AnchorPane.setLeftAnchor(title, frac * 100);

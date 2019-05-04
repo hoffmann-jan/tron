@@ -41,10 +41,8 @@ public class ViewModel implements Subscriber<GameMessage> {
 		case REFUSED:
 			this.connectionModel.connectionWasRefused();
 			break;
-		case NEW_PLAYER:		
+		case PLAYER_CHANGE:		
 			Platform.runLater(this.lobbyModel::refresh); 
-			Platform.runLater(() -> this.status.set(item.getMessage())); 
-			break;
 		case STATUS:
 			Platform.runLater(() -> this.status.set(item.getMessage())); 
 			break;

@@ -23,6 +23,7 @@ public class LobbyViewModel {
 	}
 	
 	public void refresh() {
+		this.players.clear();
 		for (Player player : this.controller.getOriginalPlayers()) {
 			String name = String.format("%s (%d)", player.getName(), player.getId());
 			if (!players.containsKey(name)) {
