@@ -62,7 +62,7 @@ public class GameScreen extends Canvas implements Screen {
 		});
 		
 		context.setStroke(color);
-		context.setLineWidth(5);
+		context.setLineWidth(start.getWidth());
 		context.stroke();
 	}
 
@@ -93,6 +93,9 @@ public class GameScreen extends Canvas implements Screen {
 		
 		this.playerRectangels.bind(this.viewModel.playerRectangelsProperty());
 		this.playerTails.bind(this.viewModel.playerTailsProperty());
+		
+		this.viewModel.widthProperty().bind(widthProperty());
+		this.viewModel.heightProperty().bind(heightProperty());
 	}
 
 	public void setViewModel(GameViewModel viewModel) {

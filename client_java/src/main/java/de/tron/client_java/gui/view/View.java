@@ -8,6 +8,8 @@ import de.tron.client_java.gui.view.screen.TitleScreen;
 import javafx.animation.FadeTransition;
 import javafx.animation.SequentialTransition;
 import javafx.animation.Transition;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.fxml.FXML;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
@@ -21,6 +23,9 @@ import javafx.scene.image.ImageView;
 public class View {
 
 	public static final int BLUR_STRENGTH = 7;
+	
+	private final DoubleProperty width = new SimpleDoubleProperty();
+	private final DoubleProperty height = new SimpleDoubleProperty();
 	
 	private ViewModel viewModel = new ViewModel();
 	
@@ -36,8 +41,6 @@ public class View {
 	
 	private Screen currentScreen;
 
-
-
 	@FXML
 	private void initialize() {
 		this.viewModel.statusProperty().addListener((p,o,n) -> showStatusInformation(n));
@@ -50,7 +53,19 @@ public class View {
 		this.lobbyScreen.setViewModel(this.viewModel.getLobbyViewModel());
 		this.gameScreen.setViewModel(this.viewModel.getGameViewModel());
 		
+		this.height.addListener((p,o,n) -> resize()); 
+		this.width.addListener((p,o,n) -> resize()); 
+		
+		this.background.fitHeightProperty().bind(heightProperty());
+		this.background.fitWidthProperty().bind(widthProperty());
+		
 		startTitleScreenTransition();
+	}
+
+	private void resize() {
+		double min = Math.min(this.width.get(), this.height.get());
+		this.gameScreen.setWidth(min);
+		this.gameScreen.setHeight(min);
 	}
 
 	private void showStatusInformation(String status) {
@@ -98,16 +113,6 @@ public class View {
 		transition.setOnFinished(e -> changeToScreen(this.connectionScreen));
 		transition.play();
 	}
-	
-	public void resizeWindow(Number w, Number h) {
-		double width = w.doubleValue();
-		double height = h.doubleValue();
-		
-		System.out.println(width + " " + height);
-		
-//		background.setFitHeight(Math.max(width, height));
-//		background.setFitWidth(Math.max(width, height));
-	}
 
 	public void changeDirection(KeyEvent event) {
 		this.viewModel.changeDirection(event.getCode());
@@ -117,5 +122,12 @@ public class View {
 		this.viewModel.disconnect();
 	}
 
+	public DoubleProperty widthProperty() {
+		return this.width;
+	}
+	
+	public DoubleProperty heightProperty() {
+		return this.height;
+	}
 
 }

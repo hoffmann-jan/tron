@@ -21,7 +21,7 @@
 <BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.tron.client_java.gui.view.View" stylesheets="@Connection.css" id="back">
 	<center>
 		<StackPane id="back">
-			<ImageView fitHeight="500" fitWidth="500" fx:id="background">
+			<ImageView fitHeight="500" fitWidth="500" fx:id="background" preserveRatio="true">
 				<image>
 					<Image url="@background.png" />
 				</image>

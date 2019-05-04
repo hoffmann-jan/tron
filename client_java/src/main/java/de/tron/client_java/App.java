@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
@@ -21,19 +22,22 @@ public class App extends Application {
     	FXMLLoader loader = new FXMLLoader(getClass().getResource("Window.fxml"));
     	Parent root = loader.load();
         Scene scene = new Scene(root, 500, 500);
+        scene.setFill(Color.rgb(64, 64, 64));
         
         stage.sizeToScene();
-        stage.setMinHeight(stage.getHeight());
-        stage.setMinWidth(stage.getWidth());
         stage.setTitle("Tron-Game");
         stage.setScene(scene);     
         stage.show();
+        stage.setMinHeight(stage.getHeight());
+        stage.setMinWidth(stage.getWidth());
         
         Object controller = loader.getController();
         
         if (controller instanceof View) {
         	View view = (View) controller;
         	scene.setOnKeyPressed(view::changeDirection);
+        	view.widthProperty().bind(scene.widthProperty());
+        	view.heightProperty().bind(scene.heightProperty());
         	stage.setOnCloseRequest(e -> view.exit());
         }
         

@@ -10,9 +10,11 @@ import de.tron.client_java.model.GameController;
 import de.tron.client_java.model.Position;
 import de.tron.client_java.network.message.Player;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ListProperty;
 import javafx.beans.property.MapProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.SimpleMapProperty;
 import javafx.collections.FXCollections;
@@ -23,6 +25,9 @@ public class GameViewModel {
 	private final GameController controller;
 	
 	private final BooleanProperty updatesExist = new SimpleBooleanProperty();
+	
+	private final DoubleProperty width = new SimpleDoubleProperty();
+	private final DoubleProperty height = new SimpleDoubleProperty();
 	
 	private final ListProperty<Rectangle> playerRectangels = new SimpleListProperty<>(FXCollections.observableArrayList());
 	private final MapProperty<Integer, List<Rectangle>> playerTails =  new SimpleMapProperty<>(FXCollections.observableHashMap());
@@ -36,7 +41,7 @@ public class GameViewModel {
 		this.playerTails.clear();
 		this.controller.getUpdatedPlayers()
 			.stream()
-			.map(this::playerToRectangel)
+			.map(this::playerToRectangle)
 			.forEach(playerRectangels::add);
 		this.controller.getPlayerModels()
 			.entrySet()
@@ -47,25 +52,26 @@ public class GameViewModel {
 	}
 
 	private Entry<Integer, List<Rectangle>> tailToRectangles(Player player, Queue<Position> tail) {
-		List<Rectangle> rectangels = new ArrayList<>();
+		List<Rectangle> rectangles = new ArrayList<>();
 		for (Position position : tail) {
-			Rectangle rectangel = new Rectangle();
-			rectangel.setX(position.getX());
-			rectangel.setY(position.getY());
-			rectangel.setFill(Color.web(String.format("0x%06X", player.getColor())));
-			rectangels.add(rectangel);
+			Rectangle rectangle = new Rectangle();
+			rectangle.setWidth(4 * (width.get() / 500));
+			rectangle.setX(position.getX() * (width.get() / 500));
+			rectangle.setY(position.getY() * (height.get() / 500));
+			rectangle.setFill(Color.web(String.format("0x%06X", player.getColor())));
+			rectangles.add(rectangle);
 		}
-		return new SimpleEntry<>(player.getId(), rectangels);
+		return new SimpleEntry<>(player.getId(), rectangles);
 	}
 
-	private Rectangle playerToRectangel(Player player) {
-		Rectangle rectangel = new Rectangle();
-		rectangel.setX(player.getPosition().getX());
-		rectangel.setY(player.getPosition().getY());
-		rectangel.setWidth(GameController.PLAYER_SIZE);
-		rectangel.setHeight(GameController.PLAYER_SIZE);
-		rectangel.setFill(getPlayerFill(player));
-		return rectangel;
+	private Rectangle playerToRectangle(Player player) {
+		Rectangle rectangle = new Rectangle();
+		rectangle.setX(player.getPosition().getX() * (width.get() / 500));
+		rectangle.setY(player.getPosition().getY() * (height.get() / 500));
+		rectangle.setWidth(GameController.PLAYER_SIZE * (width.get() / 500));
+		rectangle.setHeight(GameController.PLAYER_SIZE * (height.get() / 500));
+		rectangle.setFill(getPlayerFill(player));
+		return rectangle;
 	}
 
 	private Color getPlayerFill(Player player) {
@@ -90,4 +96,12 @@ public class GameViewModel {
 		return this.playerTails;
 	}
 
+	public DoubleProperty widthProperty() {
+		return this.width;
+	}
+	
+	public DoubleProperty heightProperty() {
+		return this.height;
+	}
+	
 }
