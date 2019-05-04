@@ -23,7 +23,7 @@ namespace Server.Logic
         /// <summary>
         /// Size of the quadratic field.
         /// </summary>
-        private int _FliedSize;
+        private readonly int _FliedSize;
 
         Random _Random = new Random();
         int _FramesToNextTail = 20;
@@ -233,11 +233,11 @@ namespace Server.Logic
 
             try
             {
-                Bitmap bitmap = new Bitmap(500, 500, PixelFormat.Format32bppArgb);
+                Bitmap bitmap = new Bitmap(_FliedSize, _FliedSize, PixelFormat.Format32bppArgb);
 
-                for (int x = 0; x < 500; x++)
+                for (int x = 0; x < _FliedSize; x++)
                 {
-                    for (int y = 0; y < 500; y++)
+                    for (int y = 0; y < _FliedSize; y++)
                     {
                         bitmap.SetPixel(x, y, Color.DimGray);
                     }
@@ -264,18 +264,25 @@ namespace Server.Logic
                 // Draw last collision
                 Color colour = Color.Coral;
                 bitmap.SetPixel(_LastCollisionPoint.X, _LastCollisionPoint.Y, colour);
-                bitmap.SetPixel(_LastCollisionPoint.X + 1, _LastCollisionPoint.Y + 1, colour);
-                bitmap.SetPixel(_LastCollisionPoint.X + 2, _LastCollisionPoint.Y + 2, colour);
-                bitmap.SetPixel(_LastCollisionPoint.X + 1, _LastCollisionPoint.Y - 1, colour);
-                bitmap.SetPixel(_LastCollisionPoint.X + 2, _LastCollisionPoint.Y - 2, colour);
-                bitmap.SetPixel(_LastCollisionPoint.X - 1, _LastCollisionPoint.Y + 1, colour);
-                bitmap.SetPixel(_LastCollisionPoint.X - 2, _LastCollisionPoint.Y + 2, colour);
-                bitmap.SetPixel(_LastCollisionPoint.X - 1, _LastCollisionPoint.Y - 1, colour);
-                bitmap.SetPixel(_LastCollisionPoint.X - 2, _LastCollisionPoint.Y - 2, colour);
+                bitmap.SetPixel(SetPixel(_LastCollisionPoint.X + 1), SetPixel(_LastCollisionPoint.Y + 1), colour);
+                bitmap.SetPixel(SetPixel(_LastCollisionPoint.X + 2), SetPixel(_LastCollisionPoint.Y + 2), colour);
+                bitmap.SetPixel(SetPixel(_LastCollisionPoint.X + 1), SetPixel(_LastCollisionPoint.Y - 1), colour);
+                bitmap.SetPixel(SetPixel(_LastCollisionPoint.X + 2), SetPixel(_LastCollisionPoint.Y - 2), colour);
+                bitmap.SetPixel(SetPixel(_LastCollisionPoint.X - 1), SetPixel(_LastCollisionPoint.Y + 1), colour);
+                bitmap.SetPixel(SetPixel(_LastCollisionPoint.X - 2), SetPixel(_LastCollisionPoint.Y + 2), colour);
+                bitmap.SetPixel(SetPixel(_LastCollisionPoint.X - 1), SetPixel(_LastCollisionPoint.Y - 1), colour);
+                bitmap.SetPixel(SetPixel(_LastCollisionPoint.X - 2), SetPixel(_LastCollisionPoint.Y - 2), colour);
 
                 bitmap.Save(Path.Combine(Directory.GetCurrentDirectory(), $"snapshot{DateTime.Now.ToString("yyyyMMddHHmmss")}.png"), ImageFormat.Png);
             } catch (Exception ex)
             { Console.WriteLine(ex.Message); }
+        }
+
+        private int SetPixel(int pos)
+        {
+            pos += _FliedSize;
+            pos = pos % _FliedSize;
+            return pos;
         }
 
         private void DetectCollisions()
