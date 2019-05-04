@@ -262,7 +262,7 @@ namespace Server.Logic
                 }
 
                 // Draw last collision
-                Color colour = Color.Coral;
+                Color colour = Color.LimeGreen;
                 bitmap.SetPixel(_LastCollisionPoint.X, _LastCollisionPoint.Y, colour);
                 bitmap.SetPixel(SetPixel(_LastCollisionPoint.X + 1), SetPixel(_LastCollisionPoint.Y + 1), colour);
                 bitmap.SetPixel(SetPixel(_LastCollisionPoint.X + 2), SetPixel(_LastCollisionPoint.Y + 2), colour);
@@ -351,13 +351,24 @@ namespace Server.Logic
                             if (playerA.Death)
                                 break;
 
-                            // optimize: if head is not in range of segment => skip
-                            if (segmentPart.X > (headA.X + _PlayerSize)
+                            // if player a and B are the same, only detect collisions with the own tail after 5 Segments
+                            if (!playerA.Equals(playerB))
+                            {
+                                int distance = Convert.ToInt32(Math.Sqrt(Math.Pow(headA.X - segmentPart.X, 2) + Math.Pow(headA.Y - segmentPart.Y, 2)));
+                                if (distance <= _PlayerSize)
+                                    continue;
+                            }
+                            else
+                            {
+                                // optimize: if head is not in range of segment => skip
+                                if (segmentPart.X > (headA.X + _PlayerSize)
                                 || (segmentPart.X + _PlayerSize) < headA.X
 
                                 || (segmentPart.Y - _PlayerSize) > headA.Y
                                 || segmentPart.Y < (headA.Y - _PlayerSize))
-                                continue;
+                                    continue;
+                            }
+
 
                             var segmentArray = GetFrame(segmentPart.X, segmentPart.Y, _SegmentSize);
                             foreach (Point head in headArrayA)
