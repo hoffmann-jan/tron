@@ -38,6 +38,7 @@
 
 #connection-back {
 	-fx-fill: rgba(10.0, 10.0, 10.0, 0.5);
+	-fx-background-color: rgba(10.0, 10.0, 10.0, 0.5);
 }
 
 #back {

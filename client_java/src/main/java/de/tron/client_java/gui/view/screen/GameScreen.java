@@ -85,7 +85,7 @@ public class GameScreen extends Canvas implements Screen {
 	
 	@Override
 	public Transition getTransition(boolean reverse) {
-		return new FadeTransition(new Duration(0), this);
+		return new FadeTransition(Duration.seconds(reverse ? 1 : 0), this);
 	}
 	
 	private void bindProperties() {

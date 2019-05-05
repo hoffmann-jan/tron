@@ -30,6 +30,7 @@ public class GameController implements Processor<Message, GameMessage> {
 	private Subscription subscription;
 	
 	private Player localPlayer;
+	private Player winner;
 	
 	private final Set<Player> updatedPlayers = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Map<Player, Queue<Position>> playerModels = new ConcurrentHashMap<>();
@@ -171,7 +172,7 @@ public class GameController implements Processor<Message, GameMessage> {
 				information = getStartMessage();
 				break;
 			case RESULT:
-				information = getResultMessage();
+				information = getResultMessage(message);
 				break;
 			default:
 				// Enum values READY and ACTION are not used because the client should never receive messages of this types
@@ -238,13 +239,13 @@ public class GameController implements Processor<Message, GameMessage> {
 	}
 
 	private GameMessage getDeadMessage(Message message) {
-		Player disconnectedPlayer = message.getPlayers().get(0);
+		Player deadPlayer = message.getPlayers().get(0);
 		String status;
-		if (this.localPlayer.equals(disconnectedPlayer)) {
-			status = String.format("Player %s (%d) died", 
-				disconnectedPlayer.getName(), disconnectedPlayer.getId());			
-		} else {
+		if (this.localPlayer.equals(deadPlayer)) {
 			status = "You died";
+		} else {
+			status = String.format("Player %s (%d) died", 
+					deadPlayer.getName(), deadPlayer.getId());			
 		}
 		return new GameMessage(status, Information.STATUS);
 	}
@@ -264,7 +265,13 @@ public class GameController implements Processor<Message, GameMessage> {
 		return new GameMessage("The game will start", Information.START);
 	}
 	
-	private GameMessage getResultMessage() {
+	private GameMessage getResultMessage(Message message) {
+		Player messageWinner = message.getPlayers().get(0);
+		this.winner = getOriginalPlayers()
+				.stream()
+				.filter(p -> p.getId() == messageWinner.getId())
+				.findFirst()
+				.orElse(messageWinner);
 		return new GameMessage(null, Information.RESULT);
 	}
 	
@@ -278,5 +285,9 @@ public class GameController implements Processor<Message, GameMessage> {
 
 	public Map<Player, Queue<Position>> getPlayerModels() {
 		return this.playerModels;
+	}
+
+	public Player getWinner() {
+		return this.winner;
 	}	
 }

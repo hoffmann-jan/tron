@@ -2,10 +2,17 @@
 
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.geometry.Insets?>
+<?import de.tron.client_java.gui.view.screen.LobbyPlayerEntry?>
 
-<fx:root xmlns:fx="http://javafx.com/fxml/1" type="VBox">
+<fx:root xmlns:fx="http://javafx.com/fxml/1" type="VBox" id="connection-back">
+	<padding>
+		<Insets top="20" right="20" bottom="20" left="20"/>
+	</padding>
 	<spacing>20</spacing>
 	<alignment>CENTER</alignment>
-	<Label text="Winner"/> 	
+	<Label text="Winner" id="title"/>
+	<Label text="The winner is:" />
+	<LobbyPlayerEntry maxWidth="200" fx:id="winner" alignment="CENTER"/> 	
 </fx:root>
 

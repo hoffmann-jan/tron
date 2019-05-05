@@ -3,11 +3,14 @@ package de.tron.client_java.gui.view.screen;
 import java.io.IOException;
 
 import de.tron.client_java.App;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.StringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 
 public class LobbyPlayerEntry extends HBox {
@@ -27,8 +30,16 @@ public class LobbyPlayerEntry extends HBox {
 		}
 	}
 	
+	public StringProperty playerNameProperty() {
+		return this.playerName.textProperty();
+	}
+	
 	public void setPlayerName(String name) {
 		this.playerName.setText(name);
+	}
+	
+	public ObjectProperty<Paint> playerColorProperty() {
+		return this.playerColor.fillProperty();
 	}
 	
 	public void setPlayerColor(Color color) {

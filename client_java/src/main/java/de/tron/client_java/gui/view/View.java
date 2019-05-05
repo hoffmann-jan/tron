@@ -52,6 +52,7 @@ public class View {
 		this.connectionScreen.setViewModel(this.viewModel.getConnectionViewModel());
 		this.lobbyScreen.setViewModel(this.viewModel.getLobbyViewModel());
 		this.gameScreen.setViewModel(this.viewModel.getGameViewModel());
+		this.resultScreen.setViewModel(this.viewModel.getResultViewModel());
 		
 		this.height.addListener((p,o,n) -> resize()); 
 		this.width.addListener((p,o,n) -> resize()); 

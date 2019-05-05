@@ -22,6 +22,7 @@ public class ViewModel implements Subscriber<GameMessage> {
 	private final ConnectionViewModel connectionModel = new ConnectionViewModel(this.controller);
 	private final LobbyViewModel lobbyModel = new LobbyViewModel(this.controller);
 	private final GameViewModel gameModel = new GameViewModel(this.controller);
+	private final ResultViewModel resultModel = new ResultViewModel();
 
 	private final StringProperty status = new SimpleStringProperty();
 	
@@ -51,6 +52,7 @@ public class ViewModel implements Subscriber<GameMessage> {
 			Platform.runLater(this.onShowLobby); 
 			break;
 		case RESULT:
+			Platform.runLater(() -> this.resultModel.refreshProperties(this.controller.getWinner()));
 			Platform.runLater(this.onShowResult);
 			break;
 		case START:
@@ -104,6 +106,10 @@ public class ViewModel implements Subscriber<GameMessage> {
 
 	public GameViewModel getGameViewModel() {
 		return this.gameModel;
+	}
+	
+	public ResultViewModel getResultViewModel() {
+		return this.resultModel;
 	}
 	
 	public StringProperty statusProperty() {

@@ -38,7 +38,7 @@
 			</ImageView> 
 			<AnchorPane id="back">
 				<StackPane AnchorPane.topAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.bottomAnchor="0" id="back">
-					<ResultScreen visible="false" fx:id="resultScreen" />
+					<ResultScreen visible="false" fx:id="resultScreen" maxWidth="240" maxHeight="160"/>
 					<GameScreen visible="false" width="500" height="500" fx:id="gameScreen" />
 					<LobbyScreen visible="false" fx:id="lobbyScreen" maxWidth="500" maxHeight="370"/> 
 					<ConnectionScreen visible="false" fx:id="connectionScreen" maxWidth="500" maxHeight="370"/>  
