@@ -495,7 +495,7 @@ namespace Server.Logic
                         break;
                 }
 
-                while (player.Tail.Count > _Length)
+                while (player.Tail.Count > _Length - 1)
                 {
                     player.Tail.Dequeue();
                 }
