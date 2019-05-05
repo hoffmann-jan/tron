@@ -10,6 +10,8 @@ using Server.Protocol;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Collections.Concurrent;
+using Server.Logic.Player;
 
 namespace Server.Logic
 {
@@ -61,7 +63,7 @@ namespace Server.Logic
         /// Reguster player.
         /// </summary>
         /// <returns>Start position.</returns>
-        public void RegisterPlayer(Player player)
+        public void RegisterPlayer(Protocol.Player player)
         {
             ExtendedPlayer extendedPlayer = new ExtendedPlayer(player);
             extendedPlayer.Death = false;
@@ -105,7 +107,21 @@ namespace Server.Logic
         /// </summary>
         public void StartGameLoop()
         {
-            Task gameThread = Task.Run(() => GameLoop(), _CancellationTokenSource.Token);
+            StartGameLoopInternal();
+        }
+
+        public void RestartGameLoop(ConcurrentDictionary<int, ClientInfo> clients)
+        {
+            _CancellationTokenSource = new CancellationTokenSource();
+            _Players.Clear();
+            _Starter = 0;
+            _Length = 1;
+            foreach (var client in clients)
+            {
+                RegisterPlayer(client.Value.Player);
+            }
+
+            StartGameLoopInternal();
         }
 
         public void StopGameLoop()
@@ -157,15 +173,6 @@ namespace Server.Logic
         #endregion
 
         #region private functions
-
-        /// <summary>
-        /// Get the current time in milliseconds
-        /// </summary>
-        /// <returns></returns>
-        private double GetCurrentTime()
-        {
-            return DateTime.UtcNow.Millisecond;
-        }
 
         /// <summary>
         /// Collect data and provides.
@@ -226,6 +233,11 @@ namespace Server.Logic
             GameEnded?.Invoke(new GameEndedArguments(winner));
         }
 
+        private Task StartGameLoopInternal()
+        {
+            return Task.Run(() => GameLoop(), _CancellationTokenSource.Token);
+        }
+
         private void DrawStateAndSave()
         {
             if (Environment.OSVersion.Platform == PlatformID.Unix)
@@ -254,7 +266,7 @@ namespace Server.Logic
 
                     foreach (var tail in player.Tail)
                     {
-                        foreach (var f in GetFrame(tail.X, tail.Y, _SegmentSize))
+                        foreach (var f in GetFrame(tail.Position.X, tail.Position.Y, _SegmentSize))
                         {
                             bitmap.SetPixel(SetPixel(f.X), SetPixel(f.Y), Color.Red);
                         }
@@ -266,16 +278,29 @@ namespace Server.Logic
                 bitmap.SetPixel(_LastCollisionPoint.X, _LastCollisionPoint.Y, colour);
                 bitmap.SetPixel(SetPixel(_LastCollisionPoint.X + 1), SetPixel(_LastCollisionPoint.Y + 1), colour);
                 bitmap.SetPixel(SetPixel(_LastCollisionPoint.X + 2), SetPixel(_LastCollisionPoint.Y + 2), colour);
+
                 bitmap.SetPixel(SetPixel(_LastCollisionPoint.X + 1), SetPixel(_LastCollisionPoint.Y - 1), colour);
                 bitmap.SetPixel(SetPixel(_LastCollisionPoint.X + 2), SetPixel(_LastCollisionPoint.Y - 2), colour);
+
                 bitmap.SetPixel(SetPixel(_LastCollisionPoint.X - 1), SetPixel(_LastCollisionPoint.Y + 1), colour);
                 bitmap.SetPixel(SetPixel(_LastCollisionPoint.X - 2), SetPixel(_LastCollisionPoint.Y + 2), colour);
+
                 bitmap.SetPixel(SetPixel(_LastCollisionPoint.X - 1), SetPixel(_LastCollisionPoint.Y - 1), colour);
                 bitmap.SetPixel(SetPixel(_LastCollisionPoint.X - 2), SetPixel(_LastCollisionPoint.Y - 2), colour);
 
-                bitmap.Save(Path.Combine(Directory.GetCurrentDirectory(), $"snapshot{DateTime.Now.ToString("yyyyMMddHHmmss")}.png"), ImageFormat.Png);
-            } catch (Exception ex)
-            { Console.WriteLine(ex.Message); }
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "snapshots"); 
+
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+
+                bitmap.Save(Path.Combine(path, $"snapshot{DateTime.Now.ToString("yyyyMMddHHmmss")}.png"), ImageFormat.Png);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
         private int SetPixel(int pos)
@@ -346,31 +371,30 @@ namespace Server.Logic
                     // player has tail
                     if (playerB.Length > _PlayerSize)
                     {
-                        foreach (Point segmentPart in playerB.Tail)
+                        foreach (var segmentPart in playerB.Tail)
                         {
                             if (playerA.Death)
                                 break;
 
                             // if player a and B are the same, only detect collisions with the own tail after 5 Segments
-                            if (!playerA.Equals(playerB))
+                            if (playerA.Equals(playerB))
                             {
-                                int distance = Convert.ToInt32(Math.Sqrt(Math.Pow(headA.X - segmentPart.X, 2) + Math.Pow(headA.Y - segmentPart.Y, 2)));
-                                if (distance <= _PlayerSize)
+                                if (segmentPart.RowCount < 5)
                                     continue;
                             }
                             else
                             {
                                 // optimize: if head is not in range of segment => skip
-                                if (segmentPart.X > (headA.X + _PlayerSize)
-                                || (segmentPart.X + _PlayerSize) < headA.X
+                                if (segmentPart.Position.X > (headA.X + _PlayerSize)
+                                || (segmentPart.Position.X + _PlayerSize) < headA.X
 
-                                || (segmentPart.Y - _PlayerSize) > headA.Y
-                                || segmentPart.Y < (headA.Y - _PlayerSize))
+                                || (segmentPart.Position.Y - _PlayerSize) > headA.Y
+                                || segmentPart.Position.Y < (headA.Y - _PlayerSize))
                                     continue;
                             }
 
 
-                            var segmentArray = GetFrame(segmentPart.X, segmentPart.Y, _SegmentSize);
+                            var segmentArray = GetFrame(segmentPart.Position.X, segmentPart.Position.Y, _SegmentSize);
                             foreach (Point head in headArrayA)
                             {
                                 if (playerA.Death)
@@ -444,7 +468,12 @@ namespace Server.Logic
                 else
                     player.Player.Position.Jumping = false;
 
-                player.Tail.Enqueue(new Point(player.Player.Position.X + ((_PlayerSize - _SegmentSize) / 2), player.Player.Position.Y - ((_PlayerSize - _SegmentSize) / 2)));
+                foreach(var tail in player.Tail)
+                {
+                    tail.RowCount++;
+                }
+
+                player.Tail.Enqueue(new TailSegment(new Point(player.Player.Position.X + ((_PlayerSize - _SegmentSize) / 2), player.Player.Position.Y - ((_PlayerSize - _SegmentSize) / 2)), 1));
 
                 switch (player.Direction)
                 {

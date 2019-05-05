@@ -26,6 +26,7 @@ namespace Server
         /// Use GetNextPlayerId().
         /// </summary>
         private static int _NextPlayerId = 0;
+        private static bool _FirstStart = true;
 
         private static State _ServerState;
         private static TcpListener _Server;
@@ -137,8 +138,15 @@ namespace Server
 
                     if (Clients.Any(c => c.Value.Ready != true))
                         break;
-
-                    _Tron.StartGameLoop();
+                    if (_FirstStart)
+                    {
+                        _Tron.StartGameLoop();
+                        _FirstStart = false;
+                    }
+                    else
+                    {
+                        _Tron.RestartGameLoop(Clients);
+                    }
                     break;
 
                 case Protocol.Type.TYPE_DISCONNECT:
