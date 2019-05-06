@@ -28,7 +28,6 @@ namespace Server
         private static int _NextPlayerId = 0;
         private static bool _FirstStart = true;
 
-        private static State _ServerState;
         private static TcpListener _Server;
         private static Tron _Tron;
         #endregion
@@ -47,7 +46,6 @@ namespace Server
             _Tron.SnapshotCreated += Tron_SnapshotCreated;
             _Tron.PlayerDied += Tron_PlayerDied;
             _Tron.GameEnded += Tron_GameEnded;
-            _ServerState = State.Lobby;
             StartListening(ipAddress, port);
         }
 
@@ -60,7 +58,6 @@ namespace Server
 
             Broadcast(protocol);
             _Tron.StopGameLoop();
-            _ServerState = State.Winner;
 
             Thread.Sleep(3000);
             SendLobbyMessage(null, true);
@@ -68,8 +65,6 @@ namespace Server
             {
                 client.Value.Ready = false;
             }
-
-            _ServerState = State.Lobby;
         }
 
         /// <summary>
@@ -187,6 +182,7 @@ namespace Server
                 _Server.Server.NoDelay = true;
                 // Run the Server.
                 _Server.Start();
+                Console.Clear();
                 Console.WriteLine($"Tron server listening on {ipAddress}:{port}.");
 
                 while (true)
