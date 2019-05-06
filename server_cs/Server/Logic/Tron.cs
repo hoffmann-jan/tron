@@ -338,6 +338,9 @@ namespace Server.Logic
                         // detect head on head collision
                         foreach (Point pointA in headArrayA)
                         {
+                            if (playerA.Death)
+                                break;
+
                             // optimize: if headB is not in range => skip
                             if (headB.X > (headA.X + _PlayerSize)
                                 || (headB.X + _PlayerSize) < headA.X

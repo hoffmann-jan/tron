@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using Newtonsoft.Json;
 using Server.Logic.Event;
 
 namespace Server.Tcp
 {
-    class ConnectionThread
+    public class ConnectionThread
     {
         public TcpListener threadListener;
         private static int connections = 0;
@@ -25,73 +26,120 @@ namespace Server.Tcp
             byte[] byteCount = BitConverter.GetBytes(1024);
             byte[] receiveBuffer = new byte[4096];
 
-            while (true)
+            try
             {
-                bytesToRead = BitConverter.ToInt32(byteCount, 0);
-
-                // Receive the data
-                //Console.WriteLine("TCP Listener: Receiving, reading & displaying the data...");
-                while (bytesToRead > 0)
+                while (true)
                 {
-                    if (!ns.CanRead)
-                        break;
+                    bytesToRead = BitConverter.ToInt32(byteCount, 0);
 
-                    // Make sure we don't read beyond what the first message indicates
-                    //    This is important if the client is sending multiple "messages" --
-                    //    but in this sample it sends only one
-                    if (bytesToRead < receiveBuffer.Length)
-                        nextReadCount = bytesToRead;
-                    else
-                        nextReadCount = receiveBuffer.Length;
+                    // Receive the data
+                    //Console.WriteLine("TCP Listener: Receiving, reading & displaying the data...");
+                    while (bytesToRead > 0)
+                    {
+                        if (!ns.CanRead)
+                            break;
 
-                    // Read some data
-                    rc = ns.Read(receiveBuffer, 0, nextReadCount);
+                        // Make sure we don't read beyond what the first message indicates
+                        //    This is important if the client is sending multiple "messages" --
+                        //    but in this sample it sends only one
+                        if (bytesToRead < receiveBuffer.Length)
+                            nextReadCount = bytesToRead;
+                        else
+                            nextReadCount = receiveBuffer.Length;
 
-                    // If connection is lost
+                        // Read some data
+                        rc = ns.Read(receiveBuffer, 0, nextReadCount);
+
+                        // Detect if client disconnected
+                        if (client.Client.Poll(0, SelectMode.SelectRead))
+                        {
+                            byte[] buff = new byte[1];
+                            if (client.Client.Receive(buff, SocketFlags.Peek) == 0)
+                            {
+                                // Client disconnected
+                                Console.Error.WriteLineAsync($"Host {client.Client.RemoteEndPoint.ToString()} disconected!");
+                                ConnectionLost?.Invoke(new ConnectionLostArguments(client.Client.RemoteEndPoint.ToString(), this));
+                                break;
+                            }
+                        }
+
+                        // Display what we read
+                        string readText = System.Text.Encoding.UTF8.GetString(receiveBuffer, 0, rc);
+#if DEBUG
+                        Console.WriteLine($"Received from {client.Client.RemoteEndPoint}: {readText}");
+#endif
+                        Protocol.Protocol protocol = null;
+                        try
+                        {
+                            protocol = JsonConvert.DeserializeObject<Protocol.Protocol>(readText);
+                        }
+                        catch (Exception ex)
+                        {
+                            protocol = null;
+                            Console.Error.WriteLineAsync($"JSON deserialize ERROR: '{ex.Message}'.");
+                        }
+
+                        if (protocol != null)
+                        {
+                            ProtocolRecievedArguments protocolRecievedArguments = new ProtocolRecievedArguments(protocol, client);
+                            ProtocolRecieved?.Invoke(protocolRecievedArguments);
+                        }
+
+                        bytesToRead -= rc;
+
+                    }
+
                     if (rc == 0)
                     {
                         break;
                     }
-
-                    // Display what we read
-                    string readText = System.Text.Encoding.UTF8.GetString(receiveBuffer, 0, rc);
-#if DEBUG
-                    Console.WriteLine($"Received from {client.Client.RemoteEndPoint}: {readText}");
-#endif
-                    Protocol.Protocol protocol = null;
-                    try
-                    {
-                        protocol = JsonConvert.DeserializeObject<Protocol.Protocol>(readText);
-                    }
-                    catch (Exception ex)
-                    {
-                        protocol = null;
-                        Console.Error.WriteLineAsync($"JSON deserialize ERROR: '{ex.Message}'.");
-                    }
-
-                    if (protocol != null)
-                    {
-                        ProtocolRecievedArguments protocolRecievedArguments = new ProtocolRecievedArguments(protocol, client);
-                        ProtocolRecieved?.Invoke(protocolRecievedArguments);
-                    }
-
-                    bytesToRead -= rc;
-
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLineAsync(ex.Message);
+            }
+            finally
+            {
+                ns.Close();
+                client.Close();
+                connections--;
+                Console.WriteLine($"Client disconnected: {connections} active connections");
+            }
+        }
 
-                if (rc == 0)
+        public bool PingHost(string nameOrAddress)
+        {
+            bool pingable = false;
+            Ping pinger = null;
+
+            try
+            {
+                pinger = new Ping();
+                PingReply reply = pinger.Send(nameOrAddress);
+                pingable = reply.Status == IPStatus.Success;
+            }
+            catch (PingException)
+            {
+                return false;
+            }
+            finally
+            {
+                if (pinger != null)
                 {
-                    break;
+                    pinger.Dispose();
                 }
             }
 
-            ns.Close();
-            client.Close();
-            connections--;
-            Console.WriteLine($"Client disconnected: {connections} active connections");
+            return pingable;
         }
+
 
         public delegate void ProtocolRecievedHandler(ProtocolRecievedArguments protocolRecievedArguments);
         public event ProtocolRecievedHandler ProtocolRecieved;
+
+        public delegate void ConnectionLostHandler(ConnectionLostArguments connectionLostArguments);
+        public event ConnectionLostHandler ConnectionLost;
+
     }
 }
