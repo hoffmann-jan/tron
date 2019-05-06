@@ -19,7 +19,7 @@ public class LobbyPlayerEntry extends HBox {
 	@FXML private Label playerName;
 	
 	public LobbyPlayerEntry() {
-		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("LobbyPlayer.fxml"));
+		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(App.JAR_PATH_PREFIX + "LobbyPlayer.fxml"));
 		fxmlLoader.setRoot(this);
 		fxmlLoader.setController(this);
 

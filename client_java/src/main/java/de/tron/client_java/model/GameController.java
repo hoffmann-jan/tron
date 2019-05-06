@@ -10,9 +10,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Flow.Processor;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.SubmissionPublisher;
-import java.util.concurrent.TimeUnit;
 
 import de.tron.client_java.network.NetworkController;
 import de.tron.client_java.network.message.Action;
@@ -21,10 +22,11 @@ import de.tron.client_java.network.message.MessageType;
 import de.tron.client_java.network.message.Player;
 
 public class GameController implements Processor<Message, GameMessage> {
-
+	
+	private static final Logger LOGGER = Logger.getLogger("root");
+	
 	public static final int FIELD_SIZE = 500;
 	public static final int PLAYER_SIZE = 10;
-	private static final long OFFER_TIMEOUT = 10;
 	
 	private final SubmissionPublisher<GameMessage> publisher = new SubmissionPublisher<>(ForkJoinPool.commonPool(), 4);
 	private Subscription subscription;
@@ -49,8 +51,9 @@ public class GameController implements Processor<Message, GameMessage> {
 
 	@Override
 	public void onNext(Message message) {
+		GameController.LOGGER.log(Level.INFO, "Receiving message in game controller");	
 		GameMessage information = parseMessage(message);
-		publishMessage(information);
+		this.publisher.submit(information);
 		this.subscription.request(1);
 	}
 
@@ -67,10 +70,6 @@ public class GameController implements Processor<Message, GameMessage> {
 	@Override
 	public void subscribe(Subscriber<? super GameMessage> subscriber) {
 		this.publisher.subscribe(subscriber);		
-	}
-	
-	private void publishMessage(GameMessage message) {
-		this.publisher.offer(message, GameController.OFFER_TIMEOUT, TimeUnit.MILLISECONDS, null);		
 	}
 	
 	public void connect(ConnectionData data) throws IOException {
@@ -143,7 +142,6 @@ public class GameController implements Processor<Message, GameMessage> {
 		GameMessage information = null;
 		switch (message.getType()) {
 			case CONNECT:
-				System.out.println("connect");
 				information = getConnectMessage();
 				getInformationOfLocalPlayer(message);
 				break;	

@@ -1,5 +1,8 @@
 package de.tron.client_java.gui.view;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import de.tron.client_java.gui.model.ViewModel;
 import de.tron.client_java.gui.view.screen.ConnectionScreen;
 import de.tron.client_java.gui.view.screen.LobbyScreen;
@@ -22,6 +25,8 @@ import javafx.scene.image.ImageView;
 
 public class View {
 
+	private static final Logger LOGGER = Logger.getLogger("root");
+	
 	public static final int BLUR_STRENGTH = 7;
 	
 	private final DoubleProperty width = new SimpleDoubleProperty();
@@ -43,6 +48,8 @@ public class View {
 
 	@FXML
 	private void initialize() {
+		View.LOGGER.log(Level.INFO, "Initializing the main view");
+		
 		this.viewModel.statusProperty().addListener((p,o,n) -> showStatusInformation(n));
 		
 		this.viewModel.setOnShowLobby(() -> changeToScreen(this.lobbyScreen));
@@ -51,8 +58,9 @@ public class View {
 		
 		this.connectionScreen.setViewModel(this.viewModel.getConnectionViewModel());
 		this.lobbyScreen.setViewModel(this.viewModel.getLobbyViewModel());
-		this.gameScreen.setViewModel(this.viewModel.getGameViewModel());
 		this.resultScreen.setViewModel(this.viewModel.getResultViewModel());
+		this.gameScreen.setViewModel(this.viewModel.getGameViewModel());
+		this.gameScreen.applyBlurEffect(this.backgroundBlur);
 		
 		this.height.addListener((p,o,n) -> resize()); 
 		this.width.addListener((p,o,n) -> resize()); 
@@ -70,9 +78,15 @@ public class View {
 	}
 
 	private void showStatusInformation(String status) {
+		View.LOGGER.log(Level.INFO, "Showing the status information \"{0}\"", status);
+		
 		Label statusInformation = new Label(status);
 		statusInformation.setId("status-text");
 		this.statusInformationBox.getChildren().add(statusInformation);
+		createAndPlayStatusTransition(statusInformation);
+	}
+
+	private void createAndPlayStatusTransition(Label statusInformation) {
 		FadeTransition transition = new FadeTransition(new Duration(1000), statusInformation);
 		transition.setDelay(Duration.seconds(1.5));
 		transition.setFromValue(1);
@@ -82,6 +96,8 @@ public class View {
 	}
 	
 	private void changeToScreen(Screen newScreen) {
+		View.LOGGER.log(Level.INFO, "Changing to {0}", newScreen.getClass().getSimpleName());
+		
 		newScreen.setVisible(true);
 		adjustBackgroundBlur(newScreen);
 		createAndPlayChangeTransition(newScreen);
@@ -109,6 +125,8 @@ public class View {
 	}
 
 	private void startTitleScreenTransition() {
+		View.LOGGER.log(Level.INFO, "Showing the title screen");
+		
 		this.currentScreen = titleScreen;
 		Transition transition = this.titleScreen.getTransition(false);
 		transition.setOnFinished(e -> changeToScreen(this.connectionScreen));

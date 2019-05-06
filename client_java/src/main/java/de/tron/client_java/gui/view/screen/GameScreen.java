@@ -14,6 +14,7 @@ import javafx.beans.property.SimpleMapProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.effect.BoxBlur;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 
@@ -34,7 +35,7 @@ public class GameScreen extends Canvas implements Screen {
 	private void redrawField() {
 		GraphicsContext context = getGraphicsContext2D();
 		context.clearRect(0, 0, getWidth(), getHeight());
-		this.playerRectangels.forEach(r -> drawRectangel(r, context));
+		this.playerRectangels.forEach(r -> drawPlayer(r, context));
 		drawPlayerTails(context);
 		
 	}
@@ -50,7 +51,7 @@ public class GameScreen extends Canvas implements Screen {
 		
 		Rectangle start = tail.get(0);
 		Rectangle previous = new Rectangle();
-		Color color = start.getFill().deriveColor(0, 1, 1, 0.2);
+		Color color = start.getFill().deriveColor(0, 1, 1, 0.5);
 		
 		context.beginPath();
 		context.moveTo(start.getX(), start.getY());
@@ -78,7 +79,7 @@ public class GameScreen extends Canvas implements Screen {
 		context.lineTo(rectangle.getX(), rectangle.getY());
 	}
 
-	private void drawRectangel(Rectangle rectangel, GraphicsContext context) {
+	private void drawPlayer(Rectangle rectangel, GraphicsContext context) {
 		context.setFill(rectangel.getFill());
 		context.fillRect(rectangel.getX(), rectangel.getY(), rectangel.getWidth(), rectangel.getHeight());
 	}
@@ -101,6 +102,10 @@ public class GameScreen extends Canvas implements Screen {
 	public void setViewModel(GameViewModel viewModel) {
 		this.viewModel = viewModel;
 		bindProperties();
+	}
+
+	public void applyBlurEffect(BoxBlur backgroundBlur) {
+		setEffect(backgroundBlur);		
 	}
 
 }

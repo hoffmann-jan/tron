@@ -18,12 +18,12 @@
 <?import javafx.scene.effect.BoxBlur?>
 <?import de.tron.client_java.gui.view.View?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.tron.client_java.gui.view.View" stylesheets="@Connection.css" id="back">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.tron.client_java.gui.view.View" stylesheets="/resources/de/tron/client_java/Style.css" id="back">
 	<center>
 		<StackPane id="back">
 			<ImageView fitHeight="500" fitWidth="500" fx:id="background" preserveRatio="true">
 				<image>
-					<Image url="@background.png" />
+					<Image url="/resources/de/tron/client_java/background.png" />
 				</image>
 				<effect>
 					<BoxBlur fx:id="backgroundBlur">

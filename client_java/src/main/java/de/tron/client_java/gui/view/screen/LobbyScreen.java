@@ -28,7 +28,7 @@ public class LobbyScreen extends AnchorPane implements Screen {
 	private LobbyViewModel viewModel;
 	
 	public LobbyScreen() {
-		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("Lobby.fxml"));
+		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(App.JAR_PATH_PREFIX + "Lobby.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
         

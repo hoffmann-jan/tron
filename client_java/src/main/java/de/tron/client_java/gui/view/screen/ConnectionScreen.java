@@ -47,7 +47,7 @@ public class ConnectionScreen extends AnchorPane implements Screen {
 	private ConnectionViewModel viewModel;
 	
 	public ConnectionScreen() {
-		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("Connection.fxml"));
+		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(App.JAR_PATH_PREFIX + "Connection.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
         

@@ -12,7 +12,7 @@ import javafx.util.Duration;
 public class TitleScreen extends ImageView implements Screen {
 
 	public TitleScreen() {
-		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("Title.fxml"));
+		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(App.JAR_PATH_PREFIX + "Title.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
         

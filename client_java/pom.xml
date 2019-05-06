@@ -14,12 +14,12 @@
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-controls</artifactId>
-			<version>12</version>
+			<version>11</version>
 		</dependency>
 		<dependency>
 			<groupId>org.openjfx</groupId>
 			<artifactId>javafx-fxml</artifactId>
-			<version>12</version>
+			<version>11</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
@@ -42,6 +42,7 @@
 				<artifactId>javafx-maven-plugin</artifactId>
 				<version>0.0.1</version>
 				<configuration>
+					<release>11</release>
 					<options>
 						<option>-Djava.library.path=C:\tmp</option>
 					</options>

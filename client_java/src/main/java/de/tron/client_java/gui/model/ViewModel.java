@@ -2,6 +2,8 @@ package de.tron.client_java.gui.model;
 
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import de.tron.client_java.model.GameController;
 import de.tron.client_java.model.GameMessage;
@@ -12,6 +14,8 @@ import javafx.scene.input.KeyCode;
 
 public class ViewModel implements Subscriber<GameMessage> {
 
+	private static final Logger LOGGER = Logger.getLogger("root");
+	
 	private final GameController controller = new GameController();
 	private Subscription subscription;
 	
@@ -38,6 +42,7 @@ public class ViewModel implements Subscriber<GameMessage> {
 
 	@Override
 	public void onNext(GameMessage item) {
+		ViewModel.LOGGER.log(Level.INFO, "Receiving information in view model");
 		switch (item.getInformation()) {
 		case REFUSED:
 			this.connectionModel.connectionWasRefused();
@@ -67,12 +72,12 @@ public class ViewModel implements Subscriber<GameMessage> {
 
 	@Override
 	public void onError(Throwable throwable) {
-		// TODO Error
+		ViewModel.LOGGER.log(Level.WARNING, "Flow was closed because of an exception", throwable);
 	}
 
 	@Override
 	public void onComplete() {
-		// TODO
+		ViewModel.LOGGER.log(Level.INFO, "Flow was closed properly");
 	}
 
 	public void changeDirection(KeyCode code) {

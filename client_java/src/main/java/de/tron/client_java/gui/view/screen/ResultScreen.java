@@ -18,7 +18,7 @@ public class ResultScreen extends VBox implements Screen {
 	@FXML private LobbyPlayerEntry winner;
 	
 	public ResultScreen() {
-		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("Result.fxml"));
+		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(App.JAR_PATH_PREFIX + "Result.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
         

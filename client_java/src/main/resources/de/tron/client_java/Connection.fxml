@@ -12,7 +12,7 @@
 <?import javafx.scene.shape.Rectangle?>
 
 <fx:root type="javafx.scene.layout.AnchorPane"
-	xmlns:fx="http://javafx.com/fxml/1" stylesheets="@Connection.css" id="back">
+	xmlns:fx="http://javafx.com/fxml/1" id="back">
 	<Rectangle id="connection-back" AnchorPane.topAnchor="0"
 		AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="80" AnchorPane.bottomAnchor="0" width="340" height="370" fx:id="background" opacity="0"/> 
 	<Label text="Network details" AnchorPane.topAnchor="20"
