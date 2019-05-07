@@ -105,8 +105,12 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	public Message deserialize(String jsonString) {
 		jsonString = jsonString.trim();
 		JsonElement element = new JsonParser().parse(jsonString);
-		return deserialize(element, null, null);
-
+		System.out.println("JSON: " + jsonString);
+		Message m = deserialize(element, null, null);
+		if (m.getType() == null) {
+			System.out.println(jsonString);
+		}
+		return m;
 	}
 
 	@Override
