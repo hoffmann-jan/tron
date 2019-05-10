@@ -24,7 +24,6 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 
 	private static final String LENGTH = "Length";
 	private static final String LOBBY_ID = "LobbyId";
-	private static final String PACKAGE_NUMBER = "PackageNumber";
 	private static final String TYPE = "Type";
 	private static final String MOVE = "Action";
 	private static final String PLAYERS = "Players";
@@ -46,7 +45,6 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 		JsonObject root = new JsonObject();
 		addNumberIfNotInit(src.getLength(), root, LENGTH);
 		addNumberIfNotInit(src.getLobbyId(), root, LOBBY_ID);
-		addNumberIfNotInit(src.getPackageNumber(), root, PACKAGE_NUMBER);
 		addTypeIfNotNull(src.getType(), root);
 		addMoveIfNotNull(src.getAction(), root);
 		addAllPlayers(src, root);
@@ -124,7 +122,6 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 			
 			message.setLobbyId(getAttributeAsInt(jsonMessage, LOBBY_ID));
 			message.setLength(getAttributeAsInt(jsonMessage, LENGTH));
-			message.setPackageNumber(getAttributeAsLong(jsonMessage, PACKAGE_NUMBER));
 			message.setAction(mapMove(move));
 			message.setType(mapType(type));
 			message.getPlayers().addAll(getAttributeAsPlayerSet(jsonMessage, PLAYERS));
@@ -148,15 +145,6 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 		JsonElement attribute = object.get(property);
 		if (attribute != null) {
 			return attribute.getAsInt();
-		} else {
-			return -1;
-		}
-	}
-	
-	private long getAttributeAsLong(JsonObject object, String property) {
-		JsonElement attribute = object.get(property);
-		if (attribute != null) {
-			return attribute.getAsLong();
 		} else {
 			return -1;
 		}
