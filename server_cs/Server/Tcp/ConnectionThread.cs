@@ -1,13 +1,20 @@
 ﻿using System;
 using System.Net.NetworkInformation;
+using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Net.Sockets;
 using Newtonsoft.Json;
 using Server.Logic.Event;
+using System.Text;
+using System.Numerics;
 
 namespace Server.Tcp
 {
     public class ConnectionThread
     {
+        public static Dictionary<TcpClient, RSACryptoServiceProvider> clientKeys 
+            = new Dictionary<TcpClient, RSACryptoServiceProvider>();
+
         public TcpListener threadListener;
         private static int connections = 0;
 
@@ -21,6 +28,17 @@ namespace Server.Tcp
             connections++;
             Console.WriteLine($"New client accepted: {connections} active connections");
 
+            {
+                string json = JsonConvert.SerializeObject(
+                    TronServer.rsaParameters 
+                );
+                json = string.Concat(json, "\n");
+                byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
+
+                var stream = client.GetStream();
+                stream.Write(jsonBytes, 0, jsonBytes.Length);
+                stream.Flush();
+            }
 
             int bytesToRead = 0, nextReadCount = 0, rc = 0;
             byte[] byteCount = BitConverter.GetBytes(1024);
@@ -64,29 +82,52 @@ namespace Server.Tcp
                         }
 
                         // Display what we read
-                        string readText = System.Text.Encoding.UTF8.GetString(receiveBuffer, 0, rc);
+                        string readText = Encoding.UTF8.GetString(receiveBuffer, 0, rc);                        
+
+                        if (clientKeys.ContainsKey(client))
+                        {
+                            readText = readText.Replace(Environment.NewLine, "");
+                            byte[] readTextBytes = Convert.FromBase64String(readText);
+                            byte[] plainTextBytes = TronServer.serverCsp.Decrypt(readTextBytes, false);
+
+                            readText = Encoding.UTF8.GetString(plainTextBytes);
 #if DEBUG
-                        Console.WriteLine($"Received from {client.Client.RemoteEndPoint}: {readText}");
+                            Console.WriteLine($"Received from {client.Client.RemoteEndPoint}: {readText}");
 #endif
-                        Protocol.Protocol protocol = null;
-                        try
-                        {
-                            protocol = JsonConvert.DeserializeObject<Protocol.Protocol>(readText);
-                        }
-                        catch (Exception ex)
-                        {
-                            protocol = null;
-                            Console.Error.WriteLineAsync($"JSON deserialize ERROR: '{ex.Message}'.");
-                        }
+                            Protocol.Protocol protocol = null;
+                            try
+                            {
+                                protocol = JsonConvert.DeserializeObject<Protocol.Protocol>(readText);
+                            }
+                            catch (Exception ex)
+                            {
+                                protocol = null;
+                                Console.Error.WriteLineAsync($"JSON deserialize ERROR: '{ex.Message}'.");
+                            }
 
-                        if (protocol != null)
-                        {
-                            ProtocolRecievedArguments protocolRecievedArguments = new ProtocolRecievedArguments(protocol, client);
-                            ProtocolRecieved?.Invoke(protocolRecievedArguments);
+                            if (protocol != null)
+                            {
+                                ProtocolRecievedArguments protocolRecievedArguments = new ProtocolRecievedArguments(protocol, client);
+                                ProtocolRecieved?.Invoke(protocolRecievedArguments);
+                            }
                         }
+                        else  // First message always contains the key
+                        {
+                            var parameters = JsonConvert.DeserializeObject<RsaParameters>(
+                                readText
+                            );
 
+                            RSAParameters p = new RSAParameters();
+
+                            p.Modulus = BigInteger.Parse(parameters.modulus).ToByteArray();
+                            p.Exponent = parameters.exponent.ToByteArray();
+
+                            var csp = new RSACryptoServiceProvider();
+                            csp.ImportParameters(p);
+
+                            clientKeys[client] = csp;
+                        }
                         bytesToRead -= rc;
-
                     }
 
                     if (rc == 0)
@@ -97,7 +138,7 @@ namespace Server.Tcp
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLineAsync(ex.Message);
+                Console.Error.WriteLineAsync(ex.ToString());
             }
             finally
             {

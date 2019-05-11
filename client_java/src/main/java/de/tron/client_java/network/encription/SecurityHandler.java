@@ -19,12 +19,11 @@ public class SecurityHandler {
 		String out = converter.toJson(this.rsa.getPublicKey());
 		System.out.println(out);
 		output.println(out);
-		while (input.hasNext()) {
+		if (input.hasNext()) {
 			String publicKeyMessage = input.next();
 			System.out.println(publicKeyMessage);
 			RSAPublicKeyData publicKey = converter.fromJson(publicKeyMessage, RSAPublicKeyData.class);
 			this.rsa.setOtherPublicKey(publicKey);
-			break;
 		}
 	}
 	

@@ -14,7 +14,7 @@ import javax.crypto.Cipher;
 
 public class RSAEncryption {
 
-	public static final String ALGORITHM = "RSA";
+	public static final String ALGORITHM = "RSA/ECB/PKCS1PADDING";
 
 	private final KeyPair key;
 	private PublicKey otherPublicKey;
@@ -47,7 +47,7 @@ public class RSAEncryption {
 	}
 
 	private KeyPair generateKeys() throws NoSuchAlgorithmException {
-		KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance(RSAEncryption.ALGORITHM);
+		KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance("RSA");
 		keyGenerator.initialize(2048);
 		return keyGenerator.generateKeyPair();
 	}
@@ -66,7 +66,7 @@ public class RSAEncryption {
 	
 	public void setOtherPublicKey(RSAPublicKeyData publicKey) throws GeneralSecurityException {
 		RSAPublicKeySpec keySpec = new RSAPublicKeySpec(publicKey.getModulus(), publicKey.getExponent());
-		KeyFactory keyFactory = KeyFactory.getInstance(RSAEncryption.ALGORITHM);
+		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 		this.otherPublicKey = keyFactory.generatePublic(keySpec);
 	}
 

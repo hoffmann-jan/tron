@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using System.Security.Cryptography;
 using Server.Protocol;
 
 namespace Server
@@ -16,6 +17,7 @@ namespace Server
         public int LobbyId { get; set; }
         public Player Player { get; set; }
         public TcpClient TcpClient { get; set; }
+        public RSACryptoServiceProvider crypto { get; set; } = null;
         #endregion
 
         #region Constructor

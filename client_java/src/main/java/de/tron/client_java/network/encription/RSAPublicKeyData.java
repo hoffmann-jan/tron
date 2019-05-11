@@ -5,7 +5,7 @@ import java.math.BigInteger;
 public class RSAPublicKeyData {
 
 	private BigInteger exponent;
-	private BigInteger modulus;
+	private String modulus;
 
 	public BigInteger getExponent() {
 		return exponent;
@@ -16,11 +16,11 @@ public class RSAPublicKeyData {
 	}
 
 	public BigInteger getModulus() {
-		return modulus;
+		return new BigInteger(modulus);
 	}
 
 	public void setModulus(BigInteger bigInteger) {
-		this.modulus = bigInteger;
+		this.modulus = bigInteger.toString();
 	}
 	
 }
