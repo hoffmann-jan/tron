@@ -11,35 +11,22 @@ using System.Linq;
 
 namespace Server.Tcp
 {
+    using Encryption;
+
     public class ConnectionThread
     {
-        public static Dictionary<TcpClient, RSACryptoServiceProvider> clientKeys 
-            = new Dictionary<TcpClient, RSACryptoServiceProvider>();
-
         public TcpListener threadListener;
         private static int connections = 0;
 
         public void HandleConnection()
         {
-            byte[] data = new byte[1024];
-
             TcpClient client = threadListener.AcceptTcpClient();
             client.NoDelay = true;
             NetworkStream ns = client.GetStream();
             connections++;
             Console.WriteLine($"New client accepted: {connections} active connections");
 
-            {
-                string json = JsonConvert.SerializeObject(
-                    TronServer.rsaParameters 
-                );
-                json = string.Concat(json, "\n");
-                byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
-
-                var stream = client.GetStream();
-                stream.Write(jsonBytes, 0, jsonBytes.Length);
-                stream.Flush();
-            }
+            SendPublicParameters(client);
 
             int bytesToRead = 0, nextReadCount = 0, rc = 0;
             byte[] byteCount = BitConverter.GetBytes(1024);
@@ -47,7 +34,7 @@ namespace Server.Tcp
 
             try
             {
-                string readText = "";
+                string data = "";
 
                 while (true)
                 {
@@ -85,29 +72,28 @@ namespace Server.Tcp
                             }
                         }
 
-                        // Display what we read
-                        readText += Encoding.UTF8.GetString(receiveBuffer, 0, rc);                        
+                        data += Encoding.UTF8.GetString(receiveBuffer, 0, rc);                        
 
-                        if (readText.Contains(Environment.NewLine))
+                        if (data.Contains(Environment.NewLine))
                         {
-                            string[] parts = readText.Split(Environment.NewLine);
+                            string[] parts = data.Split(Environment.NewLine);
 
-                            readText = parts[0];
+                            data = parts[0];
 
-                            if (clientKeys.ContainsKey(client))
+                            if (TronServer.Encryption.HasClient(client))
                             {
-                                readText = readText.Replace(Environment.NewLine, "");
-                                byte[] readTextBytes = Convert.FromBase64String(readText);
-                                byte[] plainTextBytes = TronServer.serverCsp.Decrypt(readTextBytes, RSAEncryptionPadding.Pkcs1);
+                                data = data.Replace(Environment.NewLine, "");
+                                byte[] readTextBytes = Convert.FromBase64String(data);
+                                byte[] plainTextBytes = TronServer.Encryption.Decrypt(readTextBytes);
 
-                                readText = Encoding.UTF8.GetString(plainTextBytes);
+                                data = Encoding.UTF8.GetString(plainTextBytes);
 #if DEBUG
-                                Console.WriteLine($"Received from {client.Client.RemoteEndPoint}: {readText}");
+                                Console.WriteLine($"Received from {client.Client.RemoteEndPoint}: {data}");
 #endif
                                 Protocol.Protocol protocol = null;
                                 try
                                 {
-                                    protocol = JsonConvert.DeserializeObject<Protocol.Protocol>(readText);
+                                    protocol = JsonConvert.DeserializeObject<Protocol.Protocol>(data);
                                 }
                                 catch (Exception ex)
                                 {
@@ -123,29 +109,9 @@ namespace Server.Tcp
                             }
                             else  // First message always contains the key
                             {
-                                var parameters = JsonConvert.DeserializeObject<RsaParameters>(readText);
-
-                                RSAParameters p = new RSAParameters();
-
-                                BigInteger modulus = BigInteger.Parse(parameters.modulus);
-                                byte[] modulusBytes = modulus.ToByteArray();
-
-                                string s = modulus.ToString();
-
-                                modulusBytes = modulusBytes.Take(modulus.ToByteArray().Count() - 1).ToArray();
-                                modulusBytes = modulusBytes.Reverse().ToArray();
-
-                                s = modulus.ToString();
-
-                                p.Modulus = modulusBytes;
-                                p.Exponent = parameters.exponent.ToByteArray();
-
-                                var csp = new RSACryptoServiceProvider();
-                                csp.ImportParameters(p);
-
-                                clientKeys[client] = csp;
+                                TronServer.Encryption.AddClient(client, RSAPublicParamters.FromJson(data));
                             }
-                            readText = parts[1];
+                            data = parts[1];
                         }
 
                         bytesToRead -= rc;
@@ -194,6 +160,17 @@ namespace Server.Tcp
             }
 
             return pingable;
+        }
+
+        private void SendPublicParameters(TcpClient client)
+        {
+            string json = TronServer.Encryption.PublicJavaParamters().ToJson();
+            json = string.Concat(json, Environment.NewLine);
+            byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
+
+            var stream = client.GetStream();
+            stream.Write(jsonBytes, 0, jsonBytes.Length);
+            stream.Flush();
         }
 
 

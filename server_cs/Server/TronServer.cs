@@ -20,11 +20,7 @@ using System.Xml.Linq;
 
 namespace Server
 {
-    public class RsaParameters
-    {
-        public string modulus;
-        public BigInteger exponent;
-    }
+    using Encryption;
 
     /// <summary>
     /// Game server for Tron.
@@ -47,21 +43,11 @@ namespace Server
         /// Connected Clients.
         /// </summary>
         public static ConcurrentDictionary<int, ClientInfo> Clients { get; set; }
-        public static RSACryptoServiceProvider serverCsp { get; set; } = new RSACryptoServiceProvider(2048);
-        public static RsaParameters rsaParameters { get; set; } = new RsaParameters();
+        public static RSAServerClientEncryption Encryption { get; set; } = new RSAServerClientEncryption();
         #endregion
 
         public static void StartTronServer(IPAddress ipAddress, int port)
         {
-            var publicKey = serverCsp.ExportParameters(false);
-
-            byte[] modulus = publicKey.Modulus;
-            modulus = modulus.Reverse().ToArray();
-            modulus = modulus.Concat(new byte[] { 0 }).ToArray();
-
-            rsaParameters.modulus = new BigInteger(modulus).ToString();
-            rsaParameters.exponent = new BigInteger(publicKey.Exponent);
-
             Clients = new ConcurrentDictionary<int, ClientInfo>();
             _Tron = new Tron(Convert.ToInt32(Properties.Resources.FieldSize));
             _Tron.SnapshotCreated += Tron_SnapshotCreated;
@@ -291,22 +277,19 @@ namespace Server
 
         private static void Send(TcpClient client, Protocol.Protocol protocol)
         {
-            string data = JsonConvert.SerializeObject(protocol, typeof(Protocol.Protocol), Formatting.None, new JsonSerializerSettings());
-
-            byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+            string plain = JsonConvert.SerializeObject(protocol);
 #if DEBUG
-            Console.WriteLine($"Sending: {data}");
+            Console.WriteLine($"Sending: {plain}");
 #endif
-            RSACryptoServiceProvider csp = ConnectionThread.clientKeys[client];
-
-            byte[] dataCypher = csp.Encrypt(dataBytes, RSAEncryptionPadding.Pkcs1);
-            string dataCypherBase = Convert.ToBase64String(dataCypher);
-            dataCypherBase = string.Concat(dataCypherBase, Environment.NewLine);
-            byte[] dataCypherBaseBytes = Encoding.UTF8.GetBytes(dataCypherBase);
+            byte[] plainBytes = Encoding.UTF8.GetBytes(plain);
+            byte[] cipherBytes = Encryption.Encrypt(plainBytes, client);
+            string cipherBase = Convert.ToBase64String(cipherBytes);
+            cipherBase = string.Concat(cipherBase, Environment.NewLine);
+            byte[] cipherBaseBytes = Encoding.UTF8.GetBytes(cipherBase);
 
             // Begin sending the data to the remote device.
             var stream = client.GetStream();
-            stream.Write(dataCypherBaseBytes, 0, dataCypherBaseBytes.Length);
+            stream.Write(cipherBaseBytes, 0, cipherBaseBytes.Length);
             stream.Flush();
         }
 
