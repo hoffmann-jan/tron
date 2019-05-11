@@ -299,7 +299,7 @@ namespace Server
 #endif
             RSACryptoServiceProvider csp = ConnectionThread.clientKeys[client];
 
-            byte[] dataCypher = csp.Encrypt(dataBytes, true);
+            byte[] dataCypher = csp.Encrypt(dataBytes, RSAEncryptionPadding.Pkcs1);
             string dataCypherBase = Convert.ToBase64String(dataCypher);
             dataCypherBase = string.Concat(dataCypherBase, Environment.NewLine);
             byte[] dataCypherBaseBytes = Encoding.UTF8.GetBytes(dataCypherBase);
