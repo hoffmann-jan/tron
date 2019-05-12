@@ -8,6 +8,7 @@ server client based game.
 
 * [.Net Core 2.2](https://dotnet.microsoft.com/download/dotnet-core/2.2)
 * configure server in AppConfig.json
+* command: dotnet run --configuration Release
 
 ### Debug
 
