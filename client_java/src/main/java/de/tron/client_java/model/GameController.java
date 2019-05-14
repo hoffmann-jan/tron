@@ -1,12 +1,9 @@
 package de.tron.client_java.model;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Flow.Processor;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
@@ -15,12 +12,21 @@ import java.util.logging.Logger;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.SubmissionPublisher;
 
+import de.tron.client_java.model.data.ConnectionData;
+import de.tron.client_java.model.data.GameMessage;
+import de.tron.client_java.model.data.Position;
 import de.tron.client_java.network.NetworkController;
 import de.tron.client_java.network.message.Action;
 import de.tron.client_java.network.message.Message;
 import de.tron.client_java.network.message.MessageType;
 import de.tron.client_java.network.message.Player;
 
+/**
+ * Class which handles received messages and creates messages of the client
+ * 
+ * @author emaeu
+ *
+ */
 public class GameController implements Processor<Message, GameMessage> {
 	
 	private static final Logger LOGGER = Logger.getLogger("root");
@@ -31,11 +37,7 @@ public class GameController implements Processor<Message, GameMessage> {
 	private final SubmissionPublisher<GameMessage> publisher = new SubmissionPublisher<>(ForkJoinPool.commonPool(), 4);
 	private Subscription subscription;
 	
-	private Player localPlayer;
-	private Player winner;
-	
-	private final Set<Player> updatedPlayers = Collections.newSetFromMap(new ConcurrentHashMap<>());
-	private final Map<Player, Queue<Position>> playerModels = new ConcurrentHashMap<>();
+	private final GameState state = new GameState();
 	
 	private final NetworkController network = new NetworkController();
 
@@ -51,8 +53,8 @@ public class GameController implements Processor<Message, GameMessage> {
 
 	@Override
 	public void onNext(Message message) {
-		GameController.LOGGER.log(Level.INFO, "Receiving message in game controller");	
-		GameMessage information = parseMessage(message);
+		GameController.LOGGER.log(Level.INFO, "Received message of type {0} in game controller", message.getType());	
+		GameMessage information = this.state.applyMessage(message);
 		this.publisher.submit(information);
 		this.subscription.request(1);
 	}
@@ -74,38 +76,58 @@ public class GameController implements Processor<Message, GameMessage> {
 	
 	public void connect(ConnectionData data) throws IOException {
 		this.network.configureConnection(data.getIp(), data.getPort());
-		this.localPlayer = new Player();
-		this.localPlayer.setColor(data.getColor());
-		this.localPlayer.setName(data.getName());
+		// create local player to recognize which player belongs to this clien
+		Player localPlayer = new Player();
+		localPlayer.setColor(data.getColor());
+		localPlayer.setName(data.getName());
+		this.state.setLocalPlayer(localPlayer);
+		
+		this.network.sendMessage(createConnectMessage(data));
+	}
+
+	private Message createConnectMessage(ConnectionData data) {
 		Message message = new Message();
 		message.setType(MessageType.CONNECT);
 		message.setLobbyId(data.getLobbyNumber());
-		message.getPlayers().add(this.localPlayer);
-		this.network.sendMessage(message);
+		message.getPlayers().add(this.state.getLocalPlayer());
+		return message;
 	}
 	
+	/**
+	 * Disconnect from server
+	 */
 	public void disconnect() {
-		if (localPlayer != null) {
+		Player localPlayer = this.state.getLocalPlayer();
+		if (localPlayer != null && localPlayer.getId() != -1) {
 			Player player = new Player();
-			player.setId(this.localPlayer.getId());
+			player.setId(localPlayer.getId());
 			Message message = new Message();
 			message.setType(MessageType.DISCONNECT);
 			message.getPlayers().add(player);
 			this.network.sendMessage(message);
 		}
+		this.network.close();
 	}
 	
+	/**
+	 * Send ready message to the server 
+	 */
 	public void readyToPlay() {
 		Player player = new Player();
-		player.setId(this.localPlayer.getId());
+		player.setId(this.state.getLocalPlayer().getId());
 		Message message = new Message();
 		message.setType(MessageType.READY);
 		message.getPlayers().add(player);
 		this.network.sendMessage(message);
 	}
 	
+	/**
+	 * Send server action of this player
+	 * 
+	 * @param key keyboard input
+	 */
 	public void changeDirection(char key) {
-		if (localPlayer == null) {
+		if (this.state.getLocalPlayer() == null) {
 			return;
 		}
 		key = Character.toLowerCase(key);
@@ -129,163 +151,32 @@ public class GameController implements Processor<Message, GameMessage> {
 			default:
 				return;	
 		}
+		this.network.sendMessage(createActionMessage(action));
+	}
+
+	private Message createActionMessage(Action action) {
 		Player player = new Player();
-		player.setId(this.localPlayer.getId());
+		player.setId(this.state.getLocalPlayer().getId());
 		Message message = new Message();
 		message.setType(MessageType.ACTION);
 		message.setAction(action);
 		message.getPlayers().add(player);
-		this.network.sendMessage(message);
-	}
-	
-	private GameMessage parseMessage(Message message) {
-		GameMessage information = null;
-		switch (message.getType()) {
-			case CONNECT:
-				information = getConnectMessage();
-				getInformationOfLocalPlayer(message);
-				break;	
-			case UPDATE:
-				information = getUpdateMessage();
-				// addPlayers updates the players because the old ones are replaced in the set
-				updatePlayers(message);
-				updateTails(message);
-				break;
-			case DISCONNECT:
-				information = getDisconnectedMessage(message);
-				removeOriginalPlayer(message);
-				break;
-			case DEAD:
-				information = getDeadMessage(message);
-				break;
-			case ADD:
-				information = getAddMessage(message);
-				addOriginalPlayers(message);
-				break;
-			case LOBBY:
-				information = getLobbyMessage();
-				addOriginalPlayers(message);
-				break;
-			case START:
-				information = getStartMessage();
-				break;
-			case RESULT:
-				information = getResultMessage(message);
-				break;
-			default:
-				// Enum values READY and ACTION are not used because the client should never receive messages of this types
-		}		
-		return information;
+		return message;
 	}
 
-	private void getInformationOfLocalPlayer(Message message) {
-		Player messagPlayer = message.getPlayers().get(0);
-		if (messagPlayer != null) {
-			this.localPlayer.setId(messagPlayer.getId());
-		}
-		this.updatedPlayers.add(localPlayer);
-		this.playerModels.put(this.localPlayer, new ConcurrentLinkedQueue<>());
-	}
-	
-	private void updatePlayers(Message message) {
-		this.updatedPlayers.clear();
-		this.updatedPlayers.addAll(message.getPlayers());
-	}
-	
-	private void addOriginalPlayers(Message message) {
-		message.getPlayers().forEach(p -> this.playerModels.put(p, new ConcurrentLinkedQueue<>()));
-	}
-	
-	private void removeOriginalPlayer(Message message) {
-		System.out.println(this.playerModels.size());
-		message.getPlayers().forEach(this.playerModels::remove);		
-		System.out.println(this.playerModels.size());
-	}
-
-	private void updateTails(Message message) {
-		int lenght = message.getLength();
-		for (Player player : message.getPlayers()) {
-			Queue<Position> playerTail = this.playerModels.get(player);
-			Position position = new Position();
-			position.setX(player.getPosition().getX() + PLAYER_SIZE / 2);
-			position.setY(player.getPosition().getY() + PLAYER_SIZE / 2);
-			playerTail.add(position);
-			
-			while (playerTail.size() > lenght) {
-				playerTail.poll();
-			}
-		}		
-	}
-	
-	private GameMessage getConnectMessage() {
-		return new GameMessage("Successfully connected. Receiving lobby information", Information.STATUS);
-	}
-
-	private GameMessage getUpdateMessage() {
-		return new GameMessage(null, Information.UPDATE);
-	}
-	
-	private GameMessage getDisconnectedMessage(Message message) {
-		Player disconnectedPlayer = message.getPlayers().get(0);
-		if (disconnectedPlayer.getId() != this.localPlayer.getId()) {
-			String status = String.format("Player %s (%d) disconnected", 
-					disconnectedPlayer.getName(), disconnectedPlayer.getId());
-			return new GameMessage(status, Information.PLAYER_CHANGE);
-		} else {
-			return new GameMessage("Couldn't join lobby", Information.REFUSED);
-		}
-	}
-
-	private GameMessage getDeadMessage(Message message) {
-		Player deadPlayer = message.getPlayers().get(0);
-		String status;
-		if (this.localPlayer.equals(deadPlayer)) {
-			status = "You died";
-		} else {
-			status = String.format("Player %s (%d) died", 
-					deadPlayer.getName(), deadPlayer.getId());			
-		}
-		return new GameMessage(status, Information.STATUS);
-	}
-
-	private GameMessage getAddMessage(Message message) {
-		Player joinedPlayer = message.getPlayers().get(0);
-		String status = String.format("Player %s (%d) joined the game", 
-				joinedPlayer.getName(), joinedPlayer.getId());
-		return new GameMessage(status, Information.PLAYER_CHANGE);
-	}
-	
-	private GameMessage getLobbyMessage() {
-		return new GameMessage(null, Information.LOBBY);
-	}
-	
-	private GameMessage getStartMessage() {
-		return new GameMessage("The game will start", Information.START);
-	}
-	
-	private GameMessage getResultMessage(Message message) {
-		Player messageWinner = message.getPlayers().get(0);
-		this.winner = getOriginalPlayers()
-				.stream()
-				.filter(p -> p.getId() == messageWinner.getId())
-				.findFirst()
-				.orElse(messageWinner);
-		return new GameMessage(null, Information.RESULT);
-	}
-	
 	public Set<Player> getOriginalPlayers() {
-		return this.playerModels.keySet();
-	}
-	
-	public Set<Player> getUpdatedPlayers() {
-		return this.updatedPlayers;
+		return this.state.getOriginalPlayers();
 	}
 
 	public Map<Player, Queue<Position>> getPlayerModels() {
-		return this.playerModels;
+		return this.state.getPlayerModels();
 	}
 
 	public Player getWinner() {
-		return this.winner;
-	}	
+		return this.state.getWinner();
+	}
+
+	public Set<Player> getUpdatedPlayers() {
+		return this.state.getUpdatedPlayers();
+	}
 }

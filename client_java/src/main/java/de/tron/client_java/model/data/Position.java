@@ -1,4 +1,4 @@
-package de.tron.client_java.model;
+package de.tron.client_java.model.data;
 
 public class Position {
 

@@ -1,4 +1,4 @@
-package de.tron.client_java.model;
+package de.tron.client_java.model.data;
 
 public enum Information {
 	STATUS,
@@ -7,5 +7,6 @@ public enum Information {
 	RESULT,
 	START, 
 	REFUSED,
-	PLAYER_CHANGE;	
+	PLAYER_CHANGE, 
+	CONNECTED;	
 }

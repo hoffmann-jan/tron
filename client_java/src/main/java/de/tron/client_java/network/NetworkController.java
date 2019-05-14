@@ -4,7 +4,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 import java.util.Scanner;
 import java.util.concurrent.Flow.Subscriber;
@@ -13,10 +12,21 @@ import java.util.concurrent.SubmissionPublisher;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import de.tron.client_java.network.encription.SecurityHandler;
+import de.tron.client_java.network.encryption.SecurityHandler;
 import de.tron.client_java.network.message.Message;
 import de.tron.client_java.network.message.converter.JsonMessageConverter;
-
+/**
+ * Class for everything that is related to network communication
+ * <ul>
+ * 	<li>Establish connection</li>
+ * 	<li>Sending messages</li>
+ * 	<li>Receiving messages</li>
+ * 	<li>Closing connection</li>
+ * </ul>
+ * 
+ * @author emaeu
+ *
+ */
 public class NetworkController implements Closeable {
 
 	private static final Logger LOGGER = Logger.getLogger("root");
@@ -29,12 +39,25 @@ public class NetworkController implements Closeable {
 	private Scanner input;
 	private PrintWriter output;
 
+	/**
+	 * Add an subscriber for received network messages form the server
+	 * 
+	 * @param subscriber
+	 */
 	public void subscribe(Subscriber<? super Message> subscriber) {
 		this.publisher.subscribe(subscriber);
 	}
 	
-	public void configureConnection(String ip, int port) throws IOException {
-		connectSockets(ip, port);
+	/**
+	 * Connect to server, determine encoding between client and server and start thread 
+	 * which will receive the server messages
+	 * 
+	 * @param address
+	 * @param port
+	 * @throws IOException
+	 */
+	public void configureConnection(String address, int port) throws IOException {
+		connectSockets(address, port);
 		initializeEncryption();
 		startReceiverThread();
 	}
@@ -71,17 +94,24 @@ public class NetworkController implements Closeable {
 	
 	@Override
 	public void close() {
-		NetworkController.LOGGER.log(Level.INFO, "Disconnecting from server");
-		
-		this.input.close();
-		this.output.close();
-		try {
-			this.connection.close();
-		} catch (IOException e) {
-			NetworkController.LOGGER.log(Level.INFO, "Failed to close connection", e);
+		if (this.connection != null && !this.connection.isClosed()) {
+			NetworkController.LOGGER.log(Level.INFO, "Disconnecting from server");
+			this.input.close();
+			this.output.close();
+			try {
+				this.connection.close();
+			} catch (IOException e) {
+				NetworkController.LOGGER.log(Level.INFO, "Failed to close connection", e);
+			}
 		}
 	}
 
+	/**
+	 * Converts message to JSON string. Afterwards this string will be encrypted and 
+	 * send to the server
+	 * 
+	 * @param message
+	 */
 	public void sendMessage(Message message) {
 		JsonMessageConverter converter = new JsonMessageConverter();
 		String messageString = converter.serialize(message);
@@ -93,6 +123,7 @@ public class NetworkController implements Closeable {
 
 	private void receiveAndPublish() {
 		try {
+			// End of while is reached if input is closed
 			while (this.input.hasNext()) {
 				Message message = receiveMessage();
 				this.publisher.submit(message);

@@ -2,8 +2,8 @@ package de.tron.client_java.gui.view.screen;
 
 import java.util.List;
 
-import de.tron.client_java.gui.model.GameViewModel;
-import de.tron.client_java.gui.model.Rectangle;
+import de.tron.client_java.gui.model.data.Rectangle;
+import de.tron.client_java.gui.model.screen.GameViewModel;
 import javafx.animation.FadeTransition;
 import javafx.animation.Transition;
 import javafx.beans.property.BooleanProperty;
@@ -71,6 +71,7 @@ public class GameScreen extends Canvas implements Screen {
 		if (previous != null) {
 			double diffX = Math.abs(rectangle.getX() - previous.getX());
 			double diffY = Math.abs(rectangle.getY() - previous.getY());
+			// Happens if player moves from one side to the opposite side 
 			if (diffX > 100 || diffY > 100) {
 				context.moveTo(rectangle.getX(), rectangle.getY());
 				return;

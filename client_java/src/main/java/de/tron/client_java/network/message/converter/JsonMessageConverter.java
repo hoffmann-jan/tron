@@ -36,6 +36,12 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	private static final String POSITION_JUMPING = "Jumping";
 	
 	
+	/**
+	 * Convert a message object into a JSON String
+	 * 
+	 * @param message
+	 * @return
+	 */
 	public String serialize(Message message) {
 		return serialize(message, null, null).toString();
 	}
@@ -100,17 +106,18 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 		}
 	}
 	
+	/**
+	 * Convert a JSON String into a message object
+	 * 
+	 * @param message
+	 * @return
+	 */
 	public Message deserialize(String jsonString) {
 		jsonString = jsonString.trim();
 		JsonElement element = new JsonParser().parse(jsonString);
-		System.out.println("JSON: " + jsonString);
-		Message m = deserialize(element, null, null);
-		if (m.getType() == null) {
-			System.out.println(jsonString);
-		}
-		return m;
+		return deserialize(element, null, null);
 	}
-
+	
 	@Override
 	public Message deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
 		Message message = new Message();

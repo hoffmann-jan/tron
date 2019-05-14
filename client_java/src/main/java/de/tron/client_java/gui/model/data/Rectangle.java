@@ -1,4 +1,4 @@
-package de.tron.client_java.gui.model;
+package de.tron.client_java.gui.model.data;
 
 import javafx.scene.paint.Color;
 

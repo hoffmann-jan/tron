@@ -60,7 +60,5 @@ public class Player {
 	public void setPosition(Position position) {
 		this.position = position;
 	}
-	
-	
-	
+
 }

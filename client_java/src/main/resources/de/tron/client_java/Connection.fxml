@@ -23,31 +23,31 @@
 		fx:id="ipLine" opacity="0">
 		<Label text="IP" minWidth="80" id="input"/>
 		<TextField HBox.hgrow="ALWAYS" maxWidth="150"
-			fx:id="ipInput" />
+			fx:id="ipInput"/>
 	</HBox>
 	<HBox AnchorPane.topAnchor="110" AnchorPane.leftAnchor="0"
 		AnchorPane.rightAnchor="0" alignment="CENTER_LEFT" spacing="20"
 		fx:id="portLine" opacity="0">
 		<Label text="Port" minWidth="80" id="input"/>
 		<TextField HBox.hgrow="ALWAYS" maxWidth="150"
-			fx:id="portInput" />
+			fx:id="portInput"/>
 	</HBox>
 	<Label text="Game details" AnchorPane.topAnchor="160"
 		AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" fx:id="gameHead"
 		opacity="0" id="title"/>
 	<HBox AnchorPane.topAnchor="210" AnchorPane.leftAnchor="0"
 		AnchorPane.rightAnchor="0" alignment="CENTER_LEFT" spacing="20"
-		fx:id="roomLine" opacity="0">
+		fx:id="lobbyLine" opacity="0">
 		<Label text="Lobby" minWidth="80" id="input"/>
 		<TextField HBox.hgrow="ALWAYS" maxWidth="150"
-			fx:id="roomInput" />
+			fx:id="lobbyInput"/>
 	</HBox>
 	<HBox AnchorPane.topAnchor="250" AnchorPane.leftAnchor="0"
 		AnchorPane.rightAnchor="0" alignment="CENTER_LEFT" spacing="20"
 		fx:id="nameLine" opacity="0">
 		<Label text="Name" minWidth="80" id="input"/>
 		<TextField HBox.hgrow="ALWAYS" maxWidth="150"
-			fx:id="nameInput" />
+			fx:id="nameInput"/>
 	</HBox>
 	<HBox AnchorPane.topAnchor="290" AnchorPane.leftAnchor="0"
 		AnchorPane.rightAnchor="0" alignment="CENTER_LEFT" spacing="20"
@@ -60,7 +60,11 @@
 		AnchorPane.rightAnchor="110" text="Connect" visible="false"
 		fx:id="connectButton" onAction="#connect" />
 	<ProgressBar AnchorPane.topAnchor="330"
-		AnchorPane.leftAnchor="240" AnchorPane.rightAnchor="110" AnchorPane.bottomAnchor="20"
-		visible="false" fx:id="connectIndicator" />
+		AnchorPane.leftAnchor="240" AnchorPane.rightAnchor="110"
+		visible="false" fx:id="connectIndicator">
+		<progress>
+			<ProgressBar fx:constant="INDETERMINATE_PROGRESS"/>
+		</progress>
+	</ProgressBar>
 </fx:root>
 

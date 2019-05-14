@@ -3,7 +3,7 @@ package de.tron.client_java.gui.view.screen;
 import java.io.IOException;
 
 import de.tron.client_java.App;
-import de.tron.client_java.gui.model.ConnectionViewModel;
+import de.tron.client_java.gui.model.screen.ConnectionViewModel;
 import javafx.animation.ParallelTransition;
 import javafx.animation.Transition;
 import javafx.beans.binding.BooleanBinding;
@@ -33,13 +33,13 @@ public class ConnectionScreen extends AnchorPane implements Screen {
 	
 	@FXML private HBox ipLine;
 	@FXML private HBox portLine;
-	@FXML private HBox roomLine;
+	@FXML private HBox lobbyLine;
 	@FXML private HBox nameLine;
 	@FXML private HBox colorLine;
 	
 	@FXML private TextField ipInput;
 	@FXML private TextField portInput;
-	@FXML private TextField roomInput;
+	@FXML private TextField lobbyInput;
 	@FXML private TextField nameInput;
 	
 	@FXML private ColorPicker colorInput;
@@ -50,7 +50,6 @@ public class ConnectionScreen extends AnchorPane implements Screen {
 		FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(App.JAR_PATH_PREFIX + "Connection.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
-        
         try {
             fxmlLoader.load();
         } catch (IOException exception) {
@@ -60,7 +59,6 @@ public class ConnectionScreen extends AnchorPane implements Screen {
 	}
 	
 	private void initalize() {
-		
 		BooleanBinding buttonVisibility = this.ipInput.textProperty().isEmpty().not();
 		buttonVisibility = buttonVisibility.and(this.portInput.textProperty().isEmpty().not());
 		buttonVisibility = buttonVisibility.and(this.connectIndicator.visibleProperty().not());
@@ -68,23 +66,31 @@ public class ConnectionScreen extends AnchorPane implements Screen {
 		
 		this.ipInput.disableProperty().bind(this.connectIndicator.visibleProperty());
 		this.portInput.disableProperty().bind(this.connectIndicator.visibleProperty());
-		this.roomInput.disableProperty().bind(this.connectIndicator.visibleProperty());
+		this.lobbyInput.disableProperty().bind(this.connectIndicator.visibleProperty());
 		this.nameInput.disableProperty().bind(this.connectIndicator.visibleProperty());
 		this.colorInput.disableProperty().bind(this.connectIndicator.visibleProperty());
 	}
 	
 	private void bindProperties() {
+		this.ipInput.idProperty().bind(this.viewModel.ipIDProperty());
+		this.portInput.idProperty().bind(this.viewModel.portIDProperty());
+		this.lobbyInput.idProperty().bind(this.viewModel.lobbyIDProperty());
+		this.nameInput.idProperty().bind(this.viewModel.nameIDProperty());
+		this.colorInput.idProperty().bind(this.viewModel.colorIDProperty());
+		
 		this.ipInput.textProperty().bindBidirectional(this.viewModel.ipProperty());	
 		this.portInput.textProperty().bindBidirectional(this.viewModel.portProperty());	
-		this.roomInput.textProperty().bindBidirectional(this.viewModel.roomProperty());	
+		this.lobbyInput.textProperty().bindBidirectional(this.viewModel.lobbyProperty());	
 		this.nameInput.textProperty().bindBidirectional(this.viewModel.nameProperty());	
 		this.colorInput.valueProperty().bindBidirectional(this.viewModel.colorProperty());
+		
 		this.connectIndicator.visibleProperty().bindBidirectional(this.viewModel.isConnectingProperty());
 	}
 	
 	@Override
 	public Transition getTransition(boolean reverse) {
 		this.connectIndicator.setOpacity(0);
+		this.connectButton.setOpacity(0);
 		
 		ParallelTransition transition = new ParallelTransition();
 		
@@ -95,11 +101,15 @@ public class ConnectionScreen extends AnchorPane implements Screen {
 
 		transition.getChildren().add(createInputNodeTransition(this.ipLine, reverse));
 		transition.getChildren().add(createInputNodeTransition(this.portLine, reverse));
-		transition.getChildren().add(createInputNodeTransition(this.roomLine, reverse));
+		transition.getChildren().add(createInputNodeTransition(this.lobbyLine, reverse));
 		transition.getChildren().add(createInputNodeTransition(this.nameLine, reverse));
 		transition.getChildren().add(createInputNodeTransition(this.colorLine, reverse));
 	
-		transition.setOnFinished(e -> setVisible(!reverse));
+		transition.setOnFinished(e -> {
+			setVisible(!reverse);
+			this.connectIndicator.setOpacity(1);
+			this.connectButton.setOpacity(1);
+		});
 		return transition;
 	}
 	
@@ -156,7 +166,11 @@ public class ConnectionScreen extends AnchorPane implements Screen {
 	
 	@FXML
 	private void connect() {
-		this.viewModel.connect();
+		try {
+			this.viewModel.connect();
+		} catch (IllegalArgumentException e) {
+			// do nothing because exception was already handled in the view model
+		}
 	}
 
 	public void setViewModel(ConnectionViewModel viewModel) {

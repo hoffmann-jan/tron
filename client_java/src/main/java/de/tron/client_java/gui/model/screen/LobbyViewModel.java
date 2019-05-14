@@ -1,4 +1,4 @@
-package de.tron.client_java.gui.model;
+package de.tron.client_java.gui.model.screen;
 
 import de.tron.client_java.model.GameController;
 import de.tron.client_java.network.message.Player;
@@ -22,6 +22,9 @@ public class LobbyViewModel {
 		this.controller.readyToPlay();		
 	}
 	
+	/**
+	 * Refresh all players in the lobby 
+	 */
 	public void refresh() {
 		this.players.clear();
 		for (Player player : this.controller.getOriginalPlayers()) {

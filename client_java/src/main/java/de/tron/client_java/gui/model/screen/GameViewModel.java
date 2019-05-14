@@ -1,4 +1,4 @@
-package de.tron.client_java.gui.model;
+package de.tron.client_java.gui.model.screen;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,8 +6,9 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.AbstractMap.SimpleEntry;
 
+import de.tron.client_java.gui.model.data.Rectangle;
 import de.tron.client_java.model.GameController;
-import de.tron.client_java.model.Position;
+import de.tron.client_java.model.data.Position;
 import de.tron.client_java.network.message.Player;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -36,19 +37,32 @@ public class GameViewModel {
 		this.controller = controller;
 	}
 	
+	/**
+	 * Update the data of the game screen
+	 * 
+	 */
 	public void refresh() {
 		this.playerRectangels.clear();
 		this.playerTails.clear();
+		refreshPlayers();
+		refreshTails();
+		this.updatesExist.set(true);
+	}
+
+
+	private void refreshPlayers() {
 		this.controller.getUpdatedPlayers()
 			.stream()
 			.map(this::playerToRectangle)
 			.forEach(playerRectangels::add);
+	}
+	
+	private void refreshTails() {
 		this.controller.getPlayerModels()
-			.entrySet()
-			.stream()
-			.map(e -> tailToRectangles(e.getKey(), e.getValue()))
-			.forEach(e -> this.playerTails.put(e.getKey(), e.getValue()));
-		this.updatesExist.set(true);
+		.entrySet()
+		.stream()
+		.map(e -> tailToRectangles(e.getKey(), e.getValue()))
+		.forEach(e -> this.playerTails.put(e.getKey(), e.getValue()));
 	}
 
 	private Entry<Integer, List<Rectangle>> tailToRectangles(Player player, Queue<Position> tail) {

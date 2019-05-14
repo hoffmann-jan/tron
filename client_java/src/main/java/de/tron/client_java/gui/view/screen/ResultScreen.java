@@ -3,7 +3,7 @@ package de.tron.client_java.gui.view.screen;
 import java.io.IOException;
 
 import de.tron.client_java.App;
-import de.tron.client_java.gui.model.ResultViewModel;
+import de.tron.client_java.gui.model.screen.ResultViewModel;
 import javafx.animation.FadeTransition;
 import javafx.animation.Transition;
 import javafx.fxml.FXML;

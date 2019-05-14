@@ -13,6 +13,7 @@ import javafx.animation.SequentialTransition;
 import javafx.animation.Transition;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.StringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
@@ -23,6 +24,12 @@ import javafx.scene.layout.VBox;
 import javafx.scene.effect.BoxBlur;
 import javafx.scene.image.ImageView;
 
+/**
+ * Main class of the client gui. Defines the general procedure of the game.
+ * 
+ * @author emaeu
+ *
+ */
 public class View {
 
 	private static final Logger LOGGER = Logger.getLogger("root");
@@ -50,11 +57,13 @@ public class View {
 	private void initialize() {
 		View.LOGGER.log(Level.INFO, "Initializing the main view");
 		
-		this.viewModel.statusProperty().addListener((p,o,n) -> showStatusInformation(n));
+		this.viewModel.statusProperty().addListener((p,o,n) -> showStatusInformation((StringProperty) p, n));
 		
+		// define the executet action if the view model wants to change the screen
 		this.viewModel.setOnShowLobby(() -> changeToScreen(this.lobbyScreen));
 		this.viewModel.setOnStart(() -> changeToScreen(this.gameScreen));
 		this.viewModel.setOnResult(() -> changeToScreen(this.resultScreen));
+		this.viewModel.setOnReturnToStart(() -> changeToScreen(this.connectionScreen));
 		
 		this.connectionScreen.setViewModel(this.viewModel.getConnectionViewModel());
 		this.lobbyScreen.setViewModel(this.viewModel.getLobbyViewModel());
@@ -62,28 +71,35 @@ public class View {
 		this.gameScreen.setViewModel(this.viewModel.getGameViewModel());
 		this.gameScreen.applyBlurEffect(this.backgroundBlur);
 		
+		// handle window resizing
 		this.height.addListener((p,o,n) -> resize()); 
 		this.width.addListener((p,o,n) -> resize()); 
-		
 		this.background.fitHeightProperty().bind(heightProperty());
 		this.background.fitWidthProperty().bind(widthProperty());
 		
+		// start the gui procedure with the title screen
 		startTitleScreenTransition();
 	}
 
+	/**
+	 * Resize the window without changing the aspect ratio of the contained components
+	 */
 	private void resize() {
 		double min = Math.min(this.width.get(), this.height.get());
 		this.gameScreen.setWidth(min);
 		this.gameScreen.setHeight(min);
 	}
 
-	private void showStatusInformation(String status) {
-		View.LOGGER.log(Level.INFO, "Showing the status information \"{0}\"", status);
-		
-		Label statusInformation = new Label(status);
-		statusInformation.setId("status-text");
-		this.statusInformationBox.getChildren().add(statusInformation);
-		createAndPlayStatusTransition(statusInformation);
+	private void showStatusInformation(StringProperty property, String status) {
+		if (status != null) {
+			View.LOGGER.log(Level.INFO, "Showing the status information \"{0}\"", status);
+			
+			Label statusInformation = new Label(status);
+			statusInformation.setId("status-text");
+			this.statusInformationBox.getChildren().add(statusInformation);
+			createAndPlayStatusTransition(statusInformation);
+			property.set(null);
+		}
 	}
 
 	private void createAndPlayStatusTransition(Label statusInformation) {

@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Map.Entry;
 
 import de.tron.client_java.App;
-import de.tron.client_java.gui.model.LobbyViewModel;
+import de.tron.client_java.gui.model.screen.LobbyViewModel;
 import javafx.animation.Interpolator;
 import javafx.animation.Transition;
 import javafx.collections.ObservableMap;
