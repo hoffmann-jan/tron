@@ -69,9 +69,9 @@ public class GameViewModel {
 		List<Rectangle> rectangles = new ArrayList<>();
 		for (Position position : tail) {
 			Rectangle rectangle = new Rectangle();
-			rectangle.setWidth(4 * (width.get() / 500));
-			rectangle.setX(position.getX() * (width.get() / 500));
-			rectangle.setY(position.getY() * (height.get() / 500));
+			rectangle.setWidth(4 * (this.width.get() / GameController.FIELD_SIZE));
+			rectangle.setX(position.getX() * (this.width.get() / GameController.FIELD_SIZE));
+			rectangle.setY(position.getY() * (this.height.get() / GameController.FIELD_SIZE));
 			rectangle.setFill(Color.web(String.format("0x%06X", player.getColor())));
 			rectangles.add(rectangle);
 		}
@@ -79,11 +79,18 @@ public class GameViewModel {
 	}
 
 	private Rectangle playerToRectangle(Player player) {
+		int playerSize = player.getPosition().isJumping() 
+				? GameController.PLAYER_JUMPING_SIZE 
+				: GameController.PLAYER_SIZE;
+		
+		double widthScale = this.width.get() / GameController.FIELD_SIZE;
+		double heightScale = this.height.get() / GameController.FIELD_SIZE;
+		
 		Rectangle rectangle = new Rectangle();
-		rectangle.setX(player.getPosition().getX() * (width.get() / 500));
-		rectangle.setY(player.getPosition().getY() * (height.get() / 500));
-		rectangle.setWidth(GameController.PLAYER_SIZE * (width.get() / 500));
-		rectangle.setHeight(GameController.PLAYER_SIZE * (height.get() / 500));
+		rectangle.setX(player.getPosition().getX() * widthScale);
+		rectangle.setY(player.getPosition().getY() * heightScale);
+		rectangle.setWidth(playerSize * widthScale);
+		rectangle.setHeight(playerSize * heightScale);
 		rectangle.setFill(getPlayerFill(player));
 		return rectangle;
 	}

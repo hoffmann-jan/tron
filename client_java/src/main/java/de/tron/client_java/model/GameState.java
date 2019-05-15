@@ -93,18 +93,19 @@ public class GameState {
 	}
 	
 	private void removeOriginalPlayer(Message message) {
-		System.out.println(this.playerModels.size());
-		message.getPlayers().forEach(this.playerModels::remove);		
-		System.out.println(this.playerModels.size());
+		message.getPlayers().forEach(this.playerModels::remove);
 	}
 
 	private void updateTails(Message message) {
 		int lenght = message.getLength();
 		for (Player player : message.getPlayers()) {
+			int playerSize = player.getPosition().isJumping() 
+					? GameController.PLAYER_JUMPING_SIZE 
+					: GameController.PLAYER_SIZE;
 			Queue<Position> playerTail = this.playerModels.get(player);
 			Position position = new Position();
-			position.setX(player.getPosition().getX() + GameController.PLAYER_SIZE / 2);
-			position.setY(player.getPosition().getY() + GameController.PLAYER_SIZE / 2);
+			position.setX(player.getPosition().getX() + playerSize / 2);
+			position.setY(player.getPosition().getY() + playerSize / 2);
 			playerTail.add(position);
 			
 			while (playerTail.size() > lenght) {

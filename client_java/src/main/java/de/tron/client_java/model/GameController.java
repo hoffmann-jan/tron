@@ -33,6 +33,7 @@ public class GameController implements Processor<Message, GameMessage> {
 	
 	public static final int FIELD_SIZE = 500;
 	public static final int PLAYER_SIZE = 10;
+	public static final int PLAYER_JUMPING_SIZE = 12;
 	
 	private final SubmissionPublisher<GameMessage> publisher = new SubmissionPublisher<>(ForkJoinPool.commonPool(), 4);
 	private Subscription subscription;
