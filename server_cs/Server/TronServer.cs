@@ -5,22 +5,17 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Security.Cryptography;
 using System.Threading;
-using System.Numerics;
 
 using Newtonsoft.Json;
-using Server.Enum;
+using Server.Encryption;
 using Server.Logic;
 using Server.Logic.Event;
 using Server.Protocol;
 using Server.Tcp;
-using System.IO;
-using System.Xml.Linq;
 
 namespace Server
 {
-    using Encryption;
 
     /// <summary>
     /// Game server for Tron.
@@ -36,6 +31,8 @@ namespace Server
 
         private static TcpListener _Server;
         private static Tron _Tron;
+        private static Enum.State _State;
+        private static List<Tuple<int, Thread>> _TemporaryConnectionInfos = new List<Tuple<int, Thread>>();
         #endregion
 
         #region Properties
@@ -65,8 +62,10 @@ namespace Server
 
             Broadcast(protocol);
             _Tron.StopGameLoop();
+            _State = Enum.State.Winner;
 
             Thread.Sleep(3000);
+            _State = Enum.State.Lobby;
             SendLobbyMessage(null, true);
             foreach (var client in Clients)
             {
@@ -109,7 +108,10 @@ namespace Server
             {
                 case Protocol.Type.TYPE_CONNECT:
                     // Add client to list.
-                    ClientInfo clientInfo = new ClientInfo(client, GetNextPlayerId(), protocol.Players.First(), protocol.LobbyId);
+                    var connectionInfo = _TemporaryConnectionInfos.First();
+                    _TemporaryConnectionInfos.Remove(connectionInfo);
+                    ClientInfo clientInfo = new ClientInfo(client, connectionInfo.Item1, protocol.Players.First(), protocol.LobbyId);
+                    clientInfo.Connection = connectionInfo.Item2;
                     if (!Clients.TryAdd(clientInfo.Player.Id, clientInfo))
                         return;
 
@@ -149,6 +151,7 @@ namespace Server
                     {
                         _Tron.RestartGameLoop(Clients);
                     }
+                    _State = Enum.State.InGame;
                     break;
 
                 case Protocol.Type.TYPE_DISCONNECT:
@@ -156,10 +159,20 @@ namespace Server
                     KeyValuePair<int, ClientInfo> kvc = Clients.FirstOrDefault(kv => kv.Value.TcpClient.Equals(client));
                     if (kvc.Value != null)
                     {
+                        kvc.Value.Connection.Abort();
                         Clients.TryRemove(kvc.Key, out var info);
                     }
 
-                    client.Close();
+
+                    // send disconnect to others
+                    Broadcast(protocol);
+
+                    // send new lobby message
+                    if (_State == Enum.State.Lobby)
+                    {
+                        SendLobbyMessage(null, true);
+                    }
+
                     break;
 
                 case Protocol.Type.TYPE_ADD:
@@ -191,6 +204,7 @@ namespace Server
                 _Server.Start();
                 Console.Clear();
                 Console.WriteLine($"Tron server listening on {ipAddress}:{port}.");
+                _State = Enum.State.Lobby;
 
                 while (true)
                 {
@@ -205,6 +219,7 @@ namespace Server
                     connectionThread.ProtocolRecieved += ConnectionThread_ProtocolRecieved;
                     Thread connection = new Thread(new ThreadStart(connectionThread.HandleConnection));
                     connection.Start();
+                    _TemporaryConnectionInfos.Add(new Tuple<int, Thread>(GetNextPlayerId(), connection));
                 }
 
             }

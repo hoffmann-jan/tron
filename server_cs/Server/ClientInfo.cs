@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.Threading;
 using Server.Protocol;
 
 namespace Server
@@ -18,6 +19,7 @@ namespace Server
         public Player Player { get; set; }
         public TcpClient TcpClient { get; set; }
         public RSACryptoServiceProvider crypto { get; set; } = null;
+        public Thread Connection { get; set; }
         #endregion
 
         #region Constructor

@@ -1,5 +1,4 @@
-﻿using System;
-namespace Server.Enum
+﻿namespace Server.Enum
 {
     public enum State
     {

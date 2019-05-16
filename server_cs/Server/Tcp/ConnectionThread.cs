@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Net.NetworkInformation;
-using System.Collections.Generic;
-using System.Security.Cryptography;
 using System.Net.Sockets;
+using System.Text;
+
 using Newtonsoft.Json;
 using Server.Logic.Event;
-using System.Text;
-using System.Numerics;
-using System.Linq;
+using Server.Encryption;
+using System.Threading;
 
 namespace Server.Tcp
 {
-    using Encryption;
 
     public class ConnectionThread
     {
@@ -122,6 +120,10 @@ namespace Server.Tcp
                         break;
                     }
                 }
+            }
+            catch (ThreadAbortException)
+            {
+                Console.WriteLine("Connection canceled!");
             }
             catch (Exception ex)
             {
