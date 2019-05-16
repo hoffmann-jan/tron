@@ -52,11 +52,11 @@ public class ViewModel implements Subscriber<GameMessage> {
 		this.subscription.request(1);
 	}
 	
-	@Override
 	/**
 	 * Determines what the view will do with the received message
 	 * 
 	 */
+	@Override
 	public void onNext(GameMessage item) {
 		ViewModel.LOGGER.log(Level.INFO, "Receiving information in view model");
 		switch (item.getInformation()) {
@@ -69,6 +69,7 @@ public class ViewModel implements Subscriber<GameMessage> {
 			break;
 		case PLAYER_CHANGE:		
 			Platform.runLater(this.lobbyModel::refresh); 
+			// Fall through is wanted
 		case STATUS:
 			Platform.runLater(() -> this.status.set(item.getMessage())); 
 			break;

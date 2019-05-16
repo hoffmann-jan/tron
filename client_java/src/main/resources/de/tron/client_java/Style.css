@@ -19,6 +19,10 @@
 						rgb(255, 7, 58);
 }
 
+.text-field {
+	-fx-accent: rgba(105.0, 255.0, 255.0, 0.3);
+}
+
 .text-field, .label {
 	-fx-font-family: 'Orbitron';
 	-fx-font-size: 14.0;

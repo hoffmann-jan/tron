@@ -76,7 +76,7 @@ public class GameController implements Processor<Message, GameMessage> {
 	}
 	
 	public void connect(ConnectionData data) throws IOException {
-		this.network.configureConnection(data.getIp(), data.getPort());
+		this.network.connect(data.getIp(), data.getPort());
 		// create local player to recognize which player belongs to this clien
 		Player localPlayer = new Player();
 		localPlayer.setColor(data.getColor());

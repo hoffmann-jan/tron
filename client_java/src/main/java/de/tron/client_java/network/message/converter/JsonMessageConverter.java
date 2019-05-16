@@ -35,6 +35,8 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	private static final String POSITION_Y = "Y";
 	private static final String POSITION_JUMPING = "Jumping";
 	
+	private JsonMessageConverter() {
+	}
 	
 	/**
 	 * Convert a message object into a JSON String
@@ -42,8 +44,9 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	 * @param message
 	 * @return
 	 */
-	public String serialize(Message message) {
-		return serialize(message, null, null).toString();
+	public static String serialize(Message message) {
+		JsonMessageConverter converter = new JsonMessageConverter();
+		return converter.serialize(message, null, null).toString();
 	}
 	
 	@Override
@@ -112,10 +115,11 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	 * @param message
 	 * @return
 	 */
-	public Message deserialize(String jsonString) {
+	public static Message deserialize(String jsonString) {
 		jsonString = jsonString.trim();
 		JsonElement element = new JsonParser().parse(jsonString);
-		return deserialize(element, null, null);
+		JsonMessageConverter converter = new JsonMessageConverter();
+		return converter.deserialize(element, null, null);
 	}
 	
 	@Override
