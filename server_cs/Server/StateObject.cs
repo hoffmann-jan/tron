@@ -11,7 +11,7 @@ namespace Server
         // Client socket.
         public Socket WorkSocket = null;
         // Size of receive buffe
-        public const int BufferSize = Globals.BufferSize;
+        public const int BufferSize = 1024;
         // Receive buffer.
         public byte[] Buffer = new byte[BufferSize];
         // Received data string.

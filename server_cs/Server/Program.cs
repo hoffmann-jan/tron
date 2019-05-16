@@ -4,31 +4,25 @@ using System.Net;
 using Newtonsoft.Json;
 
 namespace Server
-{
+{ 
     class Program
     {
+        /// <summary>
+        /// The config. Contains AppConfig.json properties.
+        /// </summary>
+        public static dynamic Config;
+
         // Main function
         // *PRODUCTION* Use config file.
         // *DEBUG* Use Globals for configuration.
         public static int Main(string[] args)
         {
-            IPAddress ipAddress;
-            int port;
-#if DEBUG
-            ipAddress = IPAddress.Parse(Globals.IP);
-            port = Globals.Port;
-#else
+
             try
             {
                 string path = Path.Combine(Directory.GetCurrentDirectory(), "AppConfig.json");
                 string file = File.ReadAllText(path);
-                dynamic config = JsonConvert.DeserializeObject(file);
-                Globals.IP = config.IP;
-                Globals.NumberOfPlayers = config.NumberOfPlayers;
-                Globals.Port = config.Port;
-
-                ipAddress = IPAddress.Parse(Globals.IP);
-                port = Globals.Port;
+                Config = JsonConvert.DeserializeObject(file);
             }
             catch (Exception exception)
             {
@@ -38,9 +32,10 @@ namespace Server
 
                 return -1;
             }
-#endif
+
             // Start the Server
-            TronServer.StartTronServer(ipAddress, port);
+            string ipString = Config.IP;
+            TronServer.StartTronServer(IPAddress.Parse(ipString), Convert.ToInt32(Config.Port));
             return 0;
         }
     }
