@@ -70,10 +70,10 @@ public class RSAEncryption {
 
 	private KeyPair generateKeys() throws NoSuchAlgorithmException {
 		KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance("RSA");
-		keyGenerator.initialize(2048);
+		keyGenerator.initialize(4096);
 		return keyGenerator.generateKeyPair();
 	}
-
+	
 	private byte[] decryptBytes(byte[] message) throws GeneralSecurityException {
 		Cipher cipher = Cipher.getInstance(RSAEncryption.ALGORITHM);
 		cipher.init(Cipher.DECRYPT_MODE, this.key.getPrivate());

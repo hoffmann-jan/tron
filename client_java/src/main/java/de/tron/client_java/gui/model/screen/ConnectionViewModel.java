@@ -1,5 +1,6 @@
 package de.tron.client_java.gui.model.screen;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -69,7 +70,8 @@ public class ConnectionViewModel {
 	
 	private void importConnectionData() {
 		Gson gson = new Gson();
-		try (FileReader reader = new FileReader("connectionDetails.json")) {
+		File dataFile = new File("connectionDetails.json");
+		try (FileReader reader = new FileReader(dataFile)) {
 			ConnectionData data = gson.fromJson(reader, ConnectionData.class);
 			this.ip.set(data.getIp());
 			this.port.set(Integer.toString(data.getPort()));
@@ -84,11 +86,12 @@ public class ConnectionViewModel {
 
 	private void exportConnectionData(ConnectionData data) {
 		Gson gson = new Gson();
-		try (FileWriter writer = new FileWriter("connectionDetails.json")) {
+		File dataFile = new File("connectionDetails.json");
+		try (FileWriter writer = new FileWriter(dataFile)) {
 			gson.toJson(data, writer);
 		} catch (IOException e) {
 			ConnectionViewModel.LOGGER.log(Level.INFO, 
-				"Failed save connection data in file \"connectionDetails.json\"");
+				"Failed to save connection data in file \"connectionDetails.json\"");
 		}
 	}
 
