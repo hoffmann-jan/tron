@@ -5,7 +5,7 @@ namespace Server.Encryption
 {
     public class RSAEncryption
     {
-        private RSACryptoServiceProvider csp = new RSACryptoServiceProvider(2048);
+        private RSACryptoServiceProvider csp = new RSACryptoServiceProvider(4096);
 
         public byte[] Decrypt(byte[] cipher)
         {
