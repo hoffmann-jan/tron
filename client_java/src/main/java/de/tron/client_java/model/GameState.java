@@ -37,10 +37,6 @@ public class GameState {
 	public GameMessage applyMessage(Message message) {
 		GameMessage information = null;
 		switch (message.getType()) {
-			case CONNECT:
-				information = getConnectMessage();
-				getInformationOfLocalPlayer(message);
-				break;	
 			case UPDATE:
 				information = getUpdateMessage();
 				// addPlayers updates the players because the old ones are replaced in the set
@@ -73,15 +69,6 @@ public class GameState {
 		}		
 		return information;
 	}
-
-	private void getInformationOfLocalPlayer(Message message) {
-		Player messagPlayer = message.getPlayers().get(0);
-		if (messagPlayer != null) {
-			this.localPlayer.setId(messagPlayer.getId());
-		}
-		this.updatedPlayers.add(localPlayer);
-		this.playerModels.put(this.localPlayer, new ConcurrentLinkedQueue<>());
-	}
 	
 	private void updatePlayers(Message message) {
 		this.updatedPlayers.clear();
@@ -113,10 +100,6 @@ public class GameState {
 			}
 		}		
 	}
-	
-	private GameMessage getConnectMessage() {
-		return new GameMessage("Successfully connected. Receiving lobby information", Information.CONNECTED);
-	}
 
 	private GameMessage getUpdateMessage() {
 		return new GameMessage(null, Information.UPDATE);
@@ -124,13 +107,9 @@ public class GameState {
 	
 	private GameMessage getDisconnectedMessage(Message message) {
 		Player disconnectedPlayer = message.getPlayers().get(0);
-		if (disconnectedPlayer.getId() != this.localPlayer.getId()) {
-			String status = String.format("Player %s (%d) disconnected", 
-					disconnectedPlayer.getName(), disconnectedPlayer.getId());
-			return new GameMessage(status, Information.PLAYER_CHANGE);
-		} else {
-			return new GameMessage("Couldn't join lobby", Information.REFUSED);
-		}
+		String status = String.format("Player %s (%d) disconnected", 
+				disconnectedPlayer.getName(), disconnectedPlayer.getId());
+		return new GameMessage(status, Information.PLAYER_CHANGE);
 	}
 
 	private GameMessage getDeadMessage(Message message) {
@@ -176,6 +155,8 @@ public class GameState {
 	
 	public void setLocalPlayer(Player localPlayer) {
 		this.localPlayer = localPlayer;
+		this.updatedPlayers.add(localPlayer);
+		this.playerModels.put(this.localPlayer, new ConcurrentLinkedQueue<>());
 	}
 	
 	public Set<Player> getOriginalPlayers() {

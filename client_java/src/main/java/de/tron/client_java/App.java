@@ -18,7 +18,7 @@ public class App extends Application {
 
 	private static final Logger LOGGER = Logger.getLogger("root");
 	
-	public static final String JAR_PATH_PREFIX = "";//"/resources/de/tron/client_java/";
+	public static final String JAR_PATH_PREFIX = "";
 	
     @Override
     public void start(Stage stage) throws IOException {	

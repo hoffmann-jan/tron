@@ -26,7 +26,7 @@ public class TitleScreen extends ImageView implements Screen {
 	@Override
 	public Transition getTransition(boolean reverse) {
 		FadeTransition transition = new FadeTransition(Duration.seconds(1), this);
-		transition.setDelay(Duration.millis(500));
+		transition.setDelay(Duration.seconds(2));
 		transition.setFromValue(reverse ? 1 : 0);
 		transition.setToValue(reverse ? 0 : 1);
 		return transition;

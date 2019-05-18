@@ -60,13 +60,6 @@ public class ViewModel implements Subscriber<GameMessage> {
 	public void onNext(GameMessage item) {
 		ViewModel.LOGGER.log(Level.INFO, "Receiving information in view model");
 		switch (item.getInformation()) {
-		case CONNECTED:
-			this.connectionModel.isConnectingProperty().set(false);
-			Platform.runLater(() -> this.status.set(item.getMessage())); 
-			break;
-		case REFUSED:
-			this.connectionModel.connectionWasRefused();
-			break;
 		case PLAYER_CHANGE:		
 			Platform.runLater(this.lobbyModel::refresh); 
 			// Fall through is wanted

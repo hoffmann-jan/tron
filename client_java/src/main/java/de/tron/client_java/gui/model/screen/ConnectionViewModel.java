@@ -18,6 +18,8 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.scene.paint.Color;
 
 public class ConnectionViewModel {
@@ -53,19 +55,41 @@ public class ConnectionViewModel {
 	}
 	
 	public void connect() {
-		this.isConnecting.set(true);
-		ConnectionData data = createConnectionData();
-		exportConnectionData(data);
-		try {
-			this.controller.connect(data);
-		} catch (IOException e) {
-			this.isConnecting.set(false);
-			viewModel.statusProperty().set("Failed to connect");
-			this.ipID.set(ERROR_INPUT_ID);
-			this.portID.set(ERROR_INPUT_ID);
-			ConnectionViewModel.LOGGER.log(Level.INFO, "Failed to connect to {0}:{1}", 
-					new Object[] {data.getIp(), data.getPort()});
-		}
+		Service<String> service = new Service<>() {
+			@Override
+			protected Task<String> createTask() {
+				return createConnectionTask();
+			}
+		};
+		
+		this.isConnecting.bind(service.runningProperty());
+		service.valueProperty().addListener((p,o,n) -> this.viewModel.statusProperty().set(n));
+		service.start();
+		
+	}
+	
+	private Task<String> createConnectionTask() {
+		return new Task<String>() {
+			@Override
+			protected String call() throws Exception {
+				ConnectionData data = createConnectionData();
+				exportConnectionData(data);
+				String status = null;
+				try {
+					controller.connect(data);
+					status = "Successfully connected. Receiving lobby information";
+				} catch (IOException e) {
+					controller.disconnect();
+					status = "Failed to connect";
+					ipID.set(ERROR_INPUT_ID);
+					portID.set(ERROR_INPUT_ID);
+					String log = String.format("Failed to connect to %s:%d because of an exception", 
+							data.getIp(), data.getPort());
+					ConnectionViewModel.LOGGER.log(Level.WARNING, log, e);
+				}
+				return status;
+			}
+		};
 	}
 	
 	private void importConnectionData() {
@@ -93,12 +117,6 @@ public class ConnectionViewModel {
 			ConnectionViewModel.LOGGER.log(Level.INFO, 
 				"Failed to save connection data in file \"connectionDetails.json\"");
 		}
-	}
-
-	public void connectionWasRefused() {
-		this.isConnecting.set(false);
-		viewModel.statusProperty().set("Connection was refused");
-		ConnectionViewModel.LOGGER.log(Level.INFO, "Connection was refused by the server");
 	}
 
 	private ConnectionData createConnectionData() {
@@ -179,10 +197,6 @@ public class ConnectionViewModel {
 		return this.color;
 	}
 
-	public BooleanProperty isConnectingProperty() {
-		return this.isConnecting;
-	}
-
 	public StringProperty ipIDProperty() {
 		return this.ipID;
 	}
@@ -201,6 +215,10 @@ public class ConnectionViewModel {
 	
 	public StringProperty colorIDProperty() {
 		return this.colorID;
+	}
+
+	public BooleanProperty isConnectingProperty() {
+		return this.isConnecting;
 	}
 
 }

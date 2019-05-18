@@ -59,7 +59,7 @@ public class View {
 		
 		this.viewModel.statusProperty().addListener((p,o,n) -> showStatusInformation((StringProperty) p, n));
 		
-		// define the executet action if the view model wants to change the screen
+		// define the executed action if the view model wants to change the screen
 		this.viewModel.setOnShowLobby(() -> changeToScreen(this.lobbyScreen));
 		this.viewModel.setOnStart(() -> changeToScreen(this.gameScreen));
 		this.viewModel.setOnResult(() -> changeToScreen(this.resultScreen));
@@ -78,7 +78,8 @@ public class View {
 		this.background.fitWidthProperty().bind(widthProperty());
 		
 		// start the gui procedure with the title screen
-		startTitleScreenTransition();
+		this.currentScreen = this.titleScreen;
+		changeToScreen(this.connectionScreen);
 	}
 
 	/**
@@ -138,15 +139,6 @@ public class View {
 			this.currentScreen = newScreen;
 		});
 		completeFade.play();
-	}
-
-	private void startTitleScreenTransition() {
-		View.LOGGER.log(Level.INFO, "Showing the title screen");
-		
-		this.currentScreen = titleScreen;
-		Transition transition = this.titleScreen.getTransition(false);
-		transition.setOnFinished(e -> changeToScreen(this.connectionScreen));
-		transition.play();
 	}
 
 	public void changeDirection(KeyEvent event) {

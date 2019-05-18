@@ -6,15 +6,23 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.util.Scanner;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.SubmissionPublisher;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import de.tron.client_java.network.encryption.SecurityHandler;
+import de.tron.client_java.network.exception.NoConnectionMessageException;
 import de.tron.client_java.network.message.Message;
+import de.tron.client_java.network.message.MessageType;
 import de.tron.client_java.network.message.converter.JsonMessageConverter;
 /**
  * Class for everything that is related to network communication
@@ -53,16 +61,43 @@ public class NetworkController implements Closeable, Publisher<Message> {
 	 * @param port
 	 * @throws IOException
 	 */
-	public void connect(String address, int port) throws IOException {
-		connectSockets(address, port);
-		initializeEncryption();
+	public Message connect(String address, int port, Message connectionMessage) throws IOException {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		Future<Message> connector = executor.submit(() -> handShake(address, port, connectionMessage));
+		
+	 	Message response;
+		try {
+			response = connector.get(10, TimeUnit.SECONDS);
+		} catch (TimeoutException e) {
+			connector.cancel(true);
+			executor.shutdownNow();
+			throw new IOException("Stopped connecting because of a time out", e);
+		} catch (InterruptedException | ExecutionException e) {
+			connector.cancel(true);
+			throw new IOException("Failed to connect to the server", e);
+		} finally {
+			executor.shutdown();
+		}
+		
 		startReceiverThread();
+	 	return response;
+	}
+
+	private Message handShake(String address, int port, Message connectionMessage) throws IOException {
+		connectSockets(address, port);
+		if (Thread.currentThread().isInterrupted())
+			return null;
+		initializeEncryption();
+		if (Thread.currentThread().isInterrupted())
+			return null;
+		return initializeConnection(connectionMessage);
 	}
 
 	private void connectSockets(String ip, int port) throws IOException {
 		NetworkController.LOGGER.log(Level.INFO, "Trying to connect to {0}:{1}", new Object[] {ip, port});
 		
 		this.connection = new Socket(ip, port);
+		this.connection.setTcpNoDelay(true);
 		this.input = new Scanner(connection.getInputStream());
 		this.output = new PrintWriter(this.connection.getOutputStream(), true);
 		
@@ -81,6 +116,30 @@ public class NetworkController implements Closeable, Publisher<Message> {
 			throw new IOException("Couldn't perform handshake for encryption with the server", e);
 		}
 	}	
+	
+	private Message initializeConnection(Message connectionMessage) throws IOException {
+		sendMessage(connectionMessage);
+		return waitForConnectResponse();
+	}
+	
+	private Message waitForConnectResponse() throws IOException {
+		NetworkController.LOGGER.log(Level.INFO, "Waiting for connection message");
+		Message message = null;
+		if (this.input.hasNext()) {
+			message = receiveMessage();
+			if (MessageType.CONNECT == message.getType()) {
+				NetworkController.LOGGER.log(Level.INFO, "Received connection message");
+				return message;
+			} else {
+				NetworkController.LOGGER.log(Level.WARNING, "Failed to establish connection because server "
+						+ "has sent something else than a connection message");
+				throw new NoConnectionMessageException();
+			}
+		}
+		NetworkController.LOGGER.log(Level.WARNING, "Failed to establish connection because server "
+				+ "has sent no connection message");
+		throw new NoConnectionMessageException();
+	}
 
 	private void startReceiverThread() {
 		Thread receiver = new Thread(this::receiveAndPublish);
@@ -92,13 +151,12 @@ public class NetworkController implements Closeable, Publisher<Message> {
 	@Override
 	public void close() {
 		if (this.connection != null && !this.connection.isClosed()) {
-			NetworkController.LOGGER.log(Level.INFO, "Disconnecting from server");
-			this.input.close();
-			this.output.close();
+			NetworkController.LOGGER.log(Level.INFO, "Trying to disconnect from server");
 			try {
 				this.connection.close();
+				NetworkController.LOGGER.log(Level.INFO, "Successfully disconnected from server");
 			} catch (IOException e) {
-				NetworkController.LOGGER.log(Level.INFO, "Failed to close connection", e);
+				NetworkController.LOGGER.log(Level.WARNING, "Failed to close connection", e);
 			}
 		}
 	}

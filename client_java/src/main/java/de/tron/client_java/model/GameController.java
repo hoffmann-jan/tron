@@ -76,21 +76,30 @@ public class GameController implements Processor<Message, GameMessage> {
 	}
 	
 	public void connect(ConnectionData data) throws IOException {
-		this.network.connect(data.getIp(), data.getPort());
 		// create local player to recognize which player belongs to this clien
 		Player localPlayer = new Player();
 		localPlayer.setColor(data.getColor());
 		localPlayer.setName(data.getName());
-		this.state.setLocalPlayer(localPlayer);
 		
-		this.network.sendMessage(createConnectMessage(data));
+		Message connectMessage = createConnectMessage(data, localPlayer);
+		Message connectResponse = this.network.connect(data.getIp(), data.getPort(), connectMessage);
+		this.state.setLocalPlayer(mergeLocalPlayerInformation(connectResponse, localPlayer));
 	}
 
-	private Message createConnectMessage(ConnectionData data) {
+	private Player mergeLocalPlayerInformation(Message connectResponse, Player localPlayer) {
+		Player responsePlayer = connectResponse.getPlayers().get(0);
+		if (responsePlayer != null) {
+			localPlayer.setId(responsePlayer.getId());
+			localPlayer.setPosition(responsePlayer.getPosition());
+		}
+		return localPlayer;
+	}
+
+	private Message createConnectMessage(ConnectionData data, Player localPlayer) {
 		Message message = new Message();
 		message.setType(MessageType.CONNECT);
 		message.setLobbyId(data.getLobbyNumber());
-		message.getPlayers().add(this.state.getLocalPlayer());
+		message.getPlayers().add(localPlayer);
 		return message;
 	}
 	

@@ -6,7 +6,5 @@ public enum Information {
 	UPDATE,
 	RESULT,
 	START, 
-	REFUSED,
-	PLAYER_CHANGE, 
-	CONNECTED;	
+	PLAYER_CHANGE;	
 }

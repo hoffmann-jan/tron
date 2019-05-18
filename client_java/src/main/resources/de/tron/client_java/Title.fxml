@@ -5,7 +5,7 @@
 
 <fx:root xmlns:fx="http://javafx.com/fxml/1" type="ImageView">
 		<image>
-			<Image url="@title_placeholder.jpg" />
+			<Image url="@title.png" />
 		</image>
 </fx:root>
 

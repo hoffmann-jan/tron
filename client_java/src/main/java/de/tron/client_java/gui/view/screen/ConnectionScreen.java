@@ -78,13 +78,13 @@ public class ConnectionScreen extends AnchorPane implements Screen {
 		this.nameInput.idProperty().bind(this.viewModel.nameIDProperty());
 		this.colorInput.idProperty().bind(this.viewModel.colorIDProperty());
 		
+		this.connectIndicator.visibleProperty().bind(this.viewModel.isConnectingProperty());
+		
 		this.ipInput.textProperty().bindBidirectional(this.viewModel.ipProperty());	
 		this.portInput.textProperty().bindBidirectional(this.viewModel.portProperty());	
 		this.lobbyInput.textProperty().bindBidirectional(this.viewModel.lobbyProperty());	
 		this.nameInput.textProperty().bindBidirectional(this.viewModel.nameProperty());	
 		this.colorInput.valueProperty().bindBidirectional(this.viewModel.colorProperty());
-		
-		this.connectIndicator.visibleProperty().bindBidirectional(this.viewModel.isConnectingProperty());
 	}
 	
 	@Override
