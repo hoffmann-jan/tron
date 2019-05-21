@@ -3,6 +3,10 @@
 server client based game.
 
 ## Client Java
+* [Java 12](https://www.oracle.com/technetwork/java/javase/downloads/jdk12-downloads-5295953.html)
+* Import in eclipse as "Existing Maven Project"
+* Adjust path of JRE in pom.xml
+* Run as Maven Build with goal "clean javafx:run"
 
 ## Server CSharp
 

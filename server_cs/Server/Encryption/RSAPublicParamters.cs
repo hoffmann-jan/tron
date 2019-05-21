@@ -1,16 +1,23 @@
-﻿using Newtonsoft.Json;
+﻿using System.Linq;
+
+using Newtonsoft.Json;
 
 namespace Server.Encryption
 {
     public class RSAPublicParamters
     {
-        public string modulus;
-        public string exponent;
+        public sbyte[] modulus;
+        public sbyte[] exponent;
 
-        public RSAPublicParamters(string modulus, string exponent)
+        public byte[] Modulus
         {
-            this.modulus = modulus;
-            this.exponent = exponent;
+            get { return modulus.Select(e => (byte)e).ToArray(); }
+            set { modulus = value.Select(e => (sbyte)e).ToArray(); }
+        }
+        public byte[] Exponent
+        {
+            get { return exponent.Select(e => (byte)e).ToArray(); }
+            set { exponent = value.Select(e => (sbyte)e).ToArray(); }
         }
 
         public static RSAPublicParamters FromJson(string json)
