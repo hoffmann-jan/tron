@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 using Newtonsoft.Json;
 using Server.Encryption;
@@ -20,7 +21,7 @@ namespace Server
     /// <summary>
     /// Game server for Tron.
     /// </summary>
-    public class TronServer
+    public static class TronServer
     {
         #region Fields
         /// <summary>
@@ -31,8 +32,20 @@ namespace Server
 
         private static TcpListener _Server;
         private static Tron _Tron;
+        private static List<Tuple<int, CancellationTokenSource>> _TemporaryConnectionInfos = new List<Tuple<int, CancellationTokenSource>>();
+
         private static Enum.State _State;
-        private static List<Tuple<int, Thread>> _TemporaryConnectionInfos = new List<Tuple<int, Thread>>();
+        private static Enum.State State
+        {
+            get => _State;
+            set
+            {
+#if DEBUG
+                Console.WriteLine($"Change server state to {value.ToString()}");
+#endif
+                _State = value;
+            } 
+        }
         #endregion
 
         #region Properties
@@ -62,10 +75,10 @@ namespace Server
 
             Broadcast(protocol);
             _Tron.StopGameLoop();
-            _State = Enum.State.Winner;
+            State = Enum.State.Winner;
 
             Thread.Sleep(3000);
-            _State = Enum.State.Lobby;
+            State = Enum.State.Lobby;
             SendLobbyMessage(null, true);
             foreach (var client in Clients)
             {
@@ -93,6 +106,12 @@ namespace Server
             Broadcast(protocol);
         }
 
+        private static void ConnectionThread_ConnectionLost(ConnectionLostArguments connectionLostArguments)
+        {
+            var client = Clients.FirstOrDefault(kv => kv.Value.TcpClient.Client.RemoteEndPoint.ToString().Equals(connectionLostArguments.Address));
+            Clients.TryRemove(client.Key, out ClientInfo nfo);
+        }
+
         private static void ConnectionThread_ProtocolRecieved(ProtocolRecievedArguments protocolRecievedArguments)
         {
             Protocol.Protocol protocol = protocolRecievedArguments.Protocol;
@@ -110,8 +129,7 @@ namespace Server
                     // Add client to list.
                     var connectionInfo = _TemporaryConnectionInfos.First();
                     _TemporaryConnectionInfos.Remove(connectionInfo);
-                    ClientInfo clientInfo = new ClientInfo(client, connectionInfo.Item1, protocol.Players.First(), protocol.LobbyId);
-                    clientInfo.Connection = connectionInfo.Item2;
+                    ClientInfo clientInfo = new ClientInfo(client, connectionInfo.Item1, protocol.Players.First(), protocol.LobbyId, connectionInfo.Item2);
                     if (!Clients.TryAdd(clientInfo.Player.Id, clientInfo))
                         return;
 
@@ -151,24 +169,40 @@ namespace Server
                     {
                         _Tron.RestartGameLoop(Clients);
                     }
-                    _State = Enum.State.InGame;
+                    State = Enum.State.InGame;
                     break;
 
                 case Protocol.Type.TYPE_DISCONNECT:
-                    // Remove client from active client list.
+
                     KeyValuePair<int, ClientInfo> kvc = Clients.FirstOrDefault(kv => kv.Value.TcpClient.Equals(client));
                     if (kvc.Value != null)
                     {
-                        kvc.Value.Connection.Abort();
+                        // send disconnect
+                        var player = kvc.Value;
+                        player.Player.Name = "Ignore";
+                        player.LobbyId = protocol.LobbyId;
+                        Position pos = new Position
+                        {
+                            X = 0,
+                            Y = 0,
+                            Jumping = false
+                        };
+                        player.Player.Position = pos;
+                        protocol.Players.Add(player.Player);
+                        Broadcast(protocol);
+
+                        try
+                        {
+                            kvc.Value.CancellationTokenSource.Cancel();
+                        }
+                        catch (ObjectDisposedException) { }
+
+                        // Remove client from active client list.
                         Clients.TryRemove(kvc.Key, out var info);
                     }
 
-
-                    // send disconnect to others
-                    Broadcast(protocol);
-
                     // send new lobby message
-                    if (_State == Enum.State.Lobby)
+                    if (State == Enum.State.Lobby)
                     {
                         SendLobbyMessage(null, true);
                     }
@@ -204,7 +238,7 @@ namespace Server
                 _Server.Start();
                 Console.Clear();
                 Console.WriteLine($"Tron server listening on {ipAddress}:{port}.");
-                _State = Enum.State.Lobby;
+                State = Enum.State.Lobby;
 
                 while (true)
                 {
@@ -217,9 +251,12 @@ namespace Server
                     ConnectionThread connectionThread = new ConnectionThread();
                     connectionThread.threadListener = _Server;
                     connectionThread.ProtocolRecieved += ConnectionThread_ProtocolRecieved;
-                    Thread connection = new Thread(new ThreadStart(connectionThread.HandleConnection));
-                    connection.Start();
-                    _TemporaryConnectionInfos.Add(new Tuple<int, Thread>(GetNextPlayerId(), connection));
+                    connectionThread.ConnectionLost += ConnectionThread_ConnectionLost;
+
+                    CancellationTokenSource tokenSource = new CancellationTokenSource();
+                    Task connectionTask = Task.Run((System.Action)connectionThread.HandleConnection, tokenSource.Token);
+
+                    _TemporaryConnectionInfos.Add(new Tuple<int, CancellationTokenSource>(GetNextPlayerId(), tokenSource));
                 }
 
             }
@@ -242,7 +279,7 @@ namespace Server
             Protocol.Protocol lobbyProtocol = new Protocol.Protocol();
             lobbyProtocol.Type = Protocol.Type.TYPE_LOBBY;
             if (all)
-                lobbyProtocol.LobbyId = 1337;
+                lobbyProtocol.LobbyId = 1;
             else
                 lobbyProtocol.LobbyId = clientInfo.LobbyId;
 
@@ -260,20 +297,27 @@ namespace Server
             }
             else
             {
-                foreach (var other in others)
+                if (others.Any())
                 {
-                    lobbyProtocol.Players.Add(other.Value.Player);
+                    foreach (var other in others)
+                    {
+                        lobbyProtocol.Players.Add(other.Value.Player);
+                    }
                 }
+
                 Send(clientInfo.TcpClient, lobbyProtocol);
 
                 // inform others
                 Protocol.Protocol addProtocol = new Protocol.Protocol();
                 addProtocol.Type = Protocol.Type.TYPE_ADD;
                 addProtocol.Players.Add(clientInfo.Player);
-
-                foreach (var other in others)
+                if (others.Any())
                 {
-                    Send(other.Value.TcpClient, addProtocol);
+                    foreach (var other in others)
+                    {
+                        if (other.Value.TcpClient.Connected)
+                            Send(other.Value.TcpClient, addProtocol);
+                    }
                 }
             }
         }
@@ -294,6 +338,7 @@ namespace Server
         {
             string plain = JsonConvert.SerializeObject(protocol);
 #if DEBUG
+            Console.WriteLine($"{Environment.NewLine}SENDING MESSAGE TYPE:{protocol.Type}.{Environment.NewLine}");
             Console.WriteLine($"Sending: {plain}");
 #endif
             byte[] plainBytes = Encoding.UTF8.GetBytes(plain);
@@ -302,10 +347,17 @@ namespace Server
             cipherBase = string.Concat(cipherBase, Environment.NewLine);
             byte[] cipherBaseBytes = Encoding.UTF8.GetBytes(cipherBase);
 
-            // Begin sending the data to the remote device.
-            var stream = client.GetStream();
-            stream.Write(cipherBaseBytes, 0, cipherBaseBytes.Length);
-            stream.Flush();
+            try
+            {
+                // Begin sending the data to the remote device.
+                var stream = client.GetStream();
+                stream.Write(cipherBaseBytes, 0, cipherBaseBytes.Length);
+                stream.Flush();
+            }
+            catch (Exception)
+            {
+                Console.Error.WriteLineAsync($"{Environment.NewLine}Exception: send failed, {client.Client.RemoteEndPoint}.{Environment.NewLine}");
+            }
         }
 
         /// <summary>

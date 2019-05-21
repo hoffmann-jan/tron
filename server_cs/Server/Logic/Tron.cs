@@ -233,9 +233,15 @@ namespace Server.Logic
             GameEnded?.Invoke(new GameEndedArguments(winner));
         }
 
-        private Task StartGameLoopInternal()
+        private void StartGameLoopInternal()
         {
-            return Task.Run(() => GameLoop(), _CancellationTokenSource.Token);
+            //Thread thread = new Thread(() => GameLoop());//, _CancellationTokenSource.Token);
+            //thread.Start();
+            Task.Factory.StartNew(
+                GameLoop,
+                _CancellationTokenSource.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
         }
 
         private void DrawStateAndSave()

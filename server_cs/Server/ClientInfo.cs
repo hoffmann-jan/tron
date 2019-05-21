@@ -18,20 +18,21 @@ namespace Server
         public int LobbyId { get; set; }
         public Player Player { get; set; }
         public TcpClient TcpClient { get; set; }
-        public RSACryptoServiceProvider crypto { get; set; } = null;
-        public Thread Connection { get; set; }
+        public RSACryptoServiceProvider Crypto { get; set; } = null;
+        public CancellationTokenSource CancellationTokenSource { get; set; }
         #endregion
 
         #region Constructor
         /// <summary>
         /// Constructor
         /// </summary>
-        public ClientInfo(TcpClient tcpClient, int playerId, Player player, int lobbyId)
+        public ClientInfo(TcpClient tcpClient, int playerId, Player player, int lobbyId, CancellationTokenSource cancellationTokenSource)
         {
             TcpClient = tcpClient;
             LobbyId = lobbyId;
             Player = player;
             Player.Id = playerId;
+            CancellationTokenSource = cancellationTokenSource;
         }
         #endregion
 

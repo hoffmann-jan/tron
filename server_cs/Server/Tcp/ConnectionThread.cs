@@ -1,23 +1,25 @@
 ﻿using System;
-using System.Net.NetworkInformation;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
 
 using Newtonsoft.Json;
 using Server.Logic.Event;
 using Server.Encryption;
-using System.Threading;
 
 namespace Server.Tcp
 {
-
     public class ConnectionThread
     {
         public TcpListener threadListener;
+        private bool _Terminate = false;
         private static int connections = 0;
 
         public void HandleConnection()
         {
+            if (_Terminate)
+                return;
+
             TcpClient client = threadListener.AcceptTcpClient();
             client.NoDelay = true;
             NetworkStream ns = client.GetStream();
@@ -32,7 +34,7 @@ namespace Server.Tcp
 
             try
             {
-                string data = "";
+                string data = string.Empty;
 
                 while (true)
                 {
@@ -40,33 +42,61 @@ namespace Server.Tcp
 
 
                     // Receive the data
-                    //Console.WriteLine("TCP Listener: Receiving, reading & displaying the data...");
                     while (bytesToRead > 0)
                     {
                         if (!ns.CanRead)
                             break;
 
                         // Make sure we don't read beyond what the first message indicates
-                        //    This is important if the client is sending multiple "messages" --
-                        //    but in this sample it sends only one
+                        // This is important if the client is sending multiple "messages" --
+                        // but in this sample it sends only one
                         if (bytesToRead < receiveBuffer.Length)
                             nextReadCount = bytesToRead;
                         else
                             nextReadCount = receiveBuffer.Length;
 
                         // Read some data
-                        rc = ns.Read(receiveBuffer, 0, nextReadCount);
+                        try
+                        {
+                            rc = ns.Read(receiveBuffer, 0, nextReadCount);
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            ns.Close();
+                            ConnectionLost?.Invoke(new ConnectionLostArguments(client.Client.RemoteEndPoint.ToString(), this));
+                            _Terminate = true;
+                            return;
+                        }
+                        catch (IOException)
+                        {
+                            ns.Close();
+                            ConnectionLost?.Invoke(new ConnectionLostArguments(client.Client.RemoteEndPoint.ToString(), this));
+                            _Terminate = true;
+                            return;
+                        }
 
                         // Detect if client disconnected
                         if (client.Client.Poll(0, SelectMode.SelectRead))
                         {
-                            byte[] buff = new byte[1];
-                            if (client.Client.Receive(buff, SocketFlags.Peek) == 0)
+                            try
+                            {
+                                byte[] buff = new byte[1];
+                                if (client.Client.Receive(buff, SocketFlags.Peek) == 0)
+                                {
+                                    // Client disconnected
+                                    Console.Error.WriteLineAsync($"Host {client.Client.RemoteEndPoint.ToString()} disconected!");
+                                    ConnectionLost?.Invoke(new ConnectionLostArguments(client.Client.RemoteEndPoint.ToString(), this));
+                                    break;
+                                }
+                            }
+                            catch (SocketException s)
                             {
                                 // Client disconnected
                                 Console.Error.WriteLineAsync($"Host {client.Client.RemoteEndPoint.ToString()} disconected!");
+                                //Console.Error.WriteLineAsync($"Message: {s.ToString()}");
                                 ConnectionLost?.Invoke(new ConnectionLostArguments(client.Client.RemoteEndPoint.ToString(), this));
-                                break;
+                                _Terminate = true;
+                                return;
                             }
                         }
 
@@ -120,48 +150,31 @@ namespace Server.Tcp
                         break;
                     }
                 }
+                // Client disconnected
+                Console.Error.WriteLineAsync($"Host {client.Client.RemoteEndPoint.ToString()} disconected!");
+                ConnectionLost?.Invoke(new ConnectionLostArguments(client.Client.RemoteEndPoint.ToString(), this));
             }
-            catch (ThreadAbortException)
+            catch (ObjectDisposedException)
             {
                 Console.WriteLine("Connection canceled!");
+                ConnectionLost?.Invoke(new ConnectionLostArguments(client.Client.RemoteEndPoint.ToString(), this));
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLineAsync(ex.ToString());
+                ConnectionLost?.Invoke(new ConnectionLostArguments(client.Client.RemoteEndPoint.ToString(), this));
             }
             finally
             {
-                ns.Close();
-                client.Close();
+                if (ns != null)
+                    ns.Close();
+                if (client != null)
+                    client.Close();
+
+                _Terminate = true;
                 connections--;
                 Console.WriteLine($"Client disconnected: {connections} active connections");
             }
-        }
-
-        public bool PingHost(string nameOrAddress)
-        {
-            bool pingable = false;
-            Ping pinger = null;
-
-            try
-            {
-                pinger = new Ping();
-                PingReply reply = pinger.Send(nameOrAddress);
-                pingable = reply.Status == IPStatus.Success;
-            }
-            catch (PingException)
-            {
-                return false;
-            }
-            finally
-            {
-                if (pinger != null)
-                {
-                    pinger.Dispose();
-                }
-            }
-
-            return pingable;
         }
 
         private void SendPublicParameters(TcpClient client)
