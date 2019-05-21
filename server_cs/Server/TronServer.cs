@@ -106,8 +106,9 @@ namespace Server
             Broadcast(protocol);
         }
 
-        private static void ConnectionThread_ConnectionLost(ConnectionLostArguments connectionLostArguments)
+        private async static void ConnectionThread_ConnectionLost(ConnectionLostArguments connectionLostArguments)
         {
+            await Task.Delay(500);
             var client = Clients.FirstOrDefault(kv => kv.Value.TcpClient.Client.RemoteEndPoint.ToString().Equals(connectionLostArguments.Address));
             Clients.TryRemove(client.Key, out ClientInfo nfo);
         }
@@ -188,6 +189,7 @@ namespace Server
                             Jumping = false
                         };
                         player.Player.Position = pos;
+                        protocol.Players.Clear();
                         protocol.Players.Add(player.Player);
                         Broadcast(protocol);
 
@@ -254,7 +256,12 @@ namespace Server
                     connectionThread.ConnectionLost += ConnectionThread_ConnectionLost;
 
                     CancellationTokenSource tokenSource = new CancellationTokenSource();
-                    Task connectionTask = Task.Run((System.Action)connectionThread.HandleConnection, tokenSource.Token);
+
+                    Task.Factory.StartNew(
+                        connectionThread.HandleConnection,
+                        tokenSource.Token,
+                        TaskCreationOptions.LongRunning,
+                        TaskScheduler.Default);
 
                     _TemporaryConnectionInfos.Add(new Tuple<int, CancellationTokenSource>(GetNextPlayerId(), tokenSource));
                 }

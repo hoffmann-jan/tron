@@ -235,8 +235,6 @@ namespace Server.Logic
 
         private void StartGameLoopInternal()
         {
-            //Thread thread = new Thread(() => GameLoop());//, _CancellationTokenSource.Token);
-            //thread.Start();
             Task.Factory.StartNew(
                 GameLoop,
                 _CancellationTokenSource.Token,
