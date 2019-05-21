@@ -17,10 +17,10 @@ server client based game.
   
 ### Run Release
 * open terminal
-* navigate to ./tron/server_cs/Server
+* navigate to ../tron/server_cs/Server
 * command: dotnet run --configuration Release
 
 ### Run Debug
 * open terminal
-* navigate to ./tron/server_cs/Server
+* navigate to ../tron/server_cs/Server
 * command: dotnet run
