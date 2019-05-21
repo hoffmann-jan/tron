@@ -93,7 +93,9 @@ namespace Server.Tcp
                             {
                                 // Client disconnected
                                 Console.Error.WriteLineAsync($"Host {client.Client.RemoteEndPoint.ToString()} disconected!");
-                                //Console.Error.WriteLineAsync($"Message: {s.ToString()}");
+#if DEBUG
+                                Console.Error.WriteLineAsync($"Message: {s.ToString()}");
+#endif
                                 ConnectionLost?.Invoke(new ConnectionLostArguments(client.Client.RemoteEndPoint.ToString(), this));
                                 _Terminate = true;
                                 return;
