@@ -4,15 +4,15 @@ import java.math.BigInteger;
 
 public class RSAPublicKeyData {
 
-	private String exponent;
-	private String modulus;
+	private byte[] exponent;
+	private byte[] modulus;
 
 	public BigInteger getExponent() {
 		return new BigInteger(exponent);
 	}
 
 	public void setExponent(BigInteger bigInteger) {
-		this.exponent = bigInteger.toString();
+		this.exponent = bigInteger.toByteArray();
 	}
 
 	public BigInteger getModulus() {
@@ -20,7 +20,7 @@ public class RSAPublicKeyData {
 	}
 
 	public void setModulus(BigInteger bigInteger) {
-		this.modulus = bigInteger.toString();
+		this.modulus = bigInteger.toByteArray();
 	}
 	
 }

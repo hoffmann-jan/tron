@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+﻿using System.Linq;
+using System.Numerics;
+
 using System.Security.Cryptography;
 
 namespace Server.Encryption
@@ -16,10 +18,12 @@ namespace Server.Encryption
         {
             RSAParameters publicKey = csp.ExportParameters(false);
 
-            return new RSAPublicParamters(
-                new BigInteger(publicKey.Modulus).ToJavaString(),
-                new BigInteger(publicKey.Exponent).ToString()
-            );
+            return new RSAPublicParamters
+            {
+                // Add Java sign bytes
+                Modulus = new byte[] { 0 }.Concat(publicKey.Modulus).ToArray(),
+                Exponent = new byte[] { 0 }.Concat(publicKey.Exponent).ToArray()
+            };
         }
     }
 }

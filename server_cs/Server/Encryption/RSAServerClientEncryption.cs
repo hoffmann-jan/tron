@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Numerics;
 using System.Security.Cryptography;
@@ -11,10 +12,19 @@ namespace Server.Encryption
 
         public void AddClient(TcpClient client, RSAPublicParamters paramters)
         {
+            byte[] modulus = paramters.Modulus;
+            byte[] exponent = paramters.Exponent;
+
+            // Take care of Java sign byte
+            if (modulus[0] == 0)
+                modulus = modulus.Skip(1).ToArray();
+            if (exponent[0] == 0)
+                exponent = exponent.Skip(1).ToArray();
+
             var cspParameters = new RSAParameters()
             {
-                Modulus = BigIntegerConverter.ParseJavaString(paramters.modulus).ToByteArray(),
-                Exponent = BigInteger.Parse(paramters.exponent).ToByteArray()
+                Modulus = modulus,
+                Exponent = exponent
             };
 
             csps[client] = new RSACryptoServiceProvider();
