@@ -15,7 +15,7 @@ namespace Server.Encryption
             byte[] modulus = paramters.Modulus;
             byte[] exponent = paramters.Exponent;
 
-            // Take care of Java sign byte
+            // Remove Java sign byte
             if (modulus[0] == 0)
                 modulus = modulus.Skip(1).ToArray();
             if (exponent[0] == 0)

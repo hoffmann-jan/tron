@@ -18,11 +18,19 @@ namespace Server.Encryption
         {
             RSAParameters publicKey = csp.ExportParameters(false);
 
+            byte[] modulus = publicKey.Modulus;
+            byte[] exponent = publicKey.Exponent;
+
+            // Add Java sign byte
+            if ((modulus[0] & (1 << 7)) != 0)
+                modulus = new byte[] { 0 }.Concat(modulus).ToArray();
+            if ((exponent[0] & (1 << 7)) != 0)
+                modulus = new byte[] { 0 }.Concat(exponent).ToArray();
+
             return new RSAPublicParamters
             {
-                // Add Java sign bytes
-                Modulus = new byte[] { 0 }.Concat(publicKey.Modulus).ToArray(),
-                Exponent = new byte[] { 0 }.Concat(publicKey.Exponent).ToArray()
+                Modulus = modulus,
+                Exponent = exponent
             };
         }
     }
