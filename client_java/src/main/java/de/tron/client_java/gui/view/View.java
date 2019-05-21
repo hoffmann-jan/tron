@@ -113,11 +113,13 @@ public class View {
 	}
 	
 	private void changeToScreen(Screen newScreen) {
-		View.LOGGER.log(Level.INFO, "Changing to {0}", newScreen.getClass().getSimpleName());
-		
-		newScreen.setVisible(true);
-		adjustBackgroundBlur(newScreen);
-		createAndPlayChangeTransition(newScreen);
+		if (newScreen != currentScreen) {
+			View.LOGGER.log(Level.INFO, "Changing to {0}", newScreen.getClass().getSimpleName());
+			
+			newScreen.setVisible(true);
+			adjustBackgroundBlur(newScreen);
+			createAndPlayChangeTransition(newScreen);
+		}
 	}
 
 	private void adjustBackgroundBlur(Screen newScreen) {

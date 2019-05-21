@@ -67,7 +67,7 @@ public class NetworkController implements Closeable, Publisher<Message> {
 		
 	 	Message response;
 		try {
-			response = connector.get(10, TimeUnit.SECONDS);
+			response = connector.get(20, TimeUnit.SECONDS);
 		} catch (TimeoutException e) {
 			connector.cancel(true);
 			executor.shutdownNow();

@@ -154,7 +154,7 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	
 	private int getAttributeAsInt(JsonObject object, String property) {
 		JsonElement attribute = object.get(property);
-		if (attribute != null) {
+		if (attribute != null && !attribute.isJsonNull()) {
 			return attribute.getAsInt();
 		} else {
 			return -1;
@@ -163,7 +163,7 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	
 	private boolean getAttributeAsBoolean(JsonObject object, String property) {
 		JsonElement attribute = object.get(property);
-		if (attribute != null) {
+		if (attribute != null && !attribute.isJsonNull()) {
 			return attribute.getAsBoolean();
 		} else {
 			return false;
@@ -172,7 +172,7 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	
 	private String getAttributeAsString(JsonObject object, String property) {
 		JsonElement attribute = object.get(property);
-		if (attribute != null) {
+		if (attribute != null && !attribute.isJsonNull()) {
 			return attribute.getAsString();
 		} else {
 			return null;
@@ -181,7 +181,7 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	
 	private Set<Player> getAttributeAsPlayerSet(JsonObject object, String property) {
 		JsonElement playersElement = object.get(property);
-		if (playersElement != null && playersElement.isJsonArray()) {
+		if (playersElement != null && playersElement.isJsonArray() && !playersElement.isJsonNull()) {
 			Set<Player> players = new HashSet<>();
 			JsonArray playersArray = playersElement.getAsJsonArray();
 			playersArray.forEach(e -> players.add(mapPlayer(e)));
@@ -193,7 +193,7 @@ public class JsonMessageConverter implements JsonSerializer<Message>, JsonDeseri
 	
 	private Position getAttributeAsPosition(JsonObject object, String property) {
 		JsonElement attribute = object.get(property);
-		if (attribute != null && attribute.isJsonObject()) {
+		if (attribute != null && attribute.isJsonObject() && !attribute.isJsonNull()) {
 			JsonObject positionObject = attribute.getAsJsonObject();
 			Position position = new Position();
 			position.setX(getAttributeAsInt(positionObject, POSITION_X));
