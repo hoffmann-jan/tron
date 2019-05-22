@@ -1,13 +1,10 @@
-package de.tron.client_java.network.encryption;
+package de.tron.client_java.network.encryption.asymmetric;
 
 import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,7 +18,6 @@ public class RSAEncryption {
 	public static final String ALGORITHM = "RSA/ECB/PKCS1PADDING";
 
 	private final KeyPair key;
-	private PublicKey otherPublicKey;
 	
 	/**
 	 * Automatically generates private and public key for RSA encoding of this client
@@ -30,24 +26,6 @@ public class RSAEncryption {
 	 */
 	public RSAEncryption() throws NoSuchAlgorithmException {
 		this.key = generateKeys();
-	}
-
-	/**
-	 * Encodes the message with the public key of the receiver and 
-	 * additionally apply Base64 encoding
-	 * 
-	 * @param message unencrypted message
-	 * @return Base64 and RSA encrypted message
-	 */
-	public String encrypt(String message) {
-		byte[] text = message.getBytes();
-		try {
-			text = encryptBytes(text);
-		} catch (GeneralSecurityException e) {
-			RSAEncryption.LOGGER.log(Level.WARNING, "Failed to encrypt message", e);
-		}
-		Base64.Encoder encoder = Base64.getEncoder();
-		return encoder.encodeToString(text);
 	}
 
 	/**
@@ -78,24 +56,6 @@ public class RSAEncryption {
 		Cipher cipher = Cipher.getInstance(RSAEncryption.ALGORITHM);
 		cipher.init(Cipher.DECRYPT_MODE, this.key.getPrivate());
 		return cipher.doFinal(message);
-	}
-
-	private byte[] encryptBytes(byte[] message) throws GeneralSecurityException {
-		Cipher cipher = Cipher.getInstance(RSAEncryption.ALGORITHM);
-		cipher.init(Cipher.ENCRYPT_MODE, this.otherPublicKey);
-		return cipher.doFinal(message);
-	}
-	
-	/**
-	 * Create an usable public key from the given data
-	 * 
-	 * @param publicKey
-	 * @throws GeneralSecurityException
-	 */
-	public void setOtherPublicKey(RSAPublicKeyData publicKey) throws GeneralSecurityException {
-		RSAPublicKeySpec keySpec = new RSAPublicKeySpec(publicKey.getModulus(), publicKey.getExponent());
-		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-		this.otherPublicKey = keyFactory.generatePublic(keySpec);
 	}
 
 	/**

@@ -1,4 +1,4 @@
-package de.tron.client_java.network.encryption;
+package de.tron.client_java.network.encryption.asymmetric;
 
 import java.math.BigInteger;
 

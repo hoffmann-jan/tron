@@ -6,12 +6,18 @@ import java.util.Scanner;
 
 import com.google.gson.Gson;
 
+import de.tron.client_java.network.encryption.asymmetric.RSAEncryption;
+import de.tron.client_java.network.encryption.symmetric.AESEncryption;
+import de.tron.client_java.network.encryption.symmetric.SymmetricHandshakeData;
+
 public class SecurityHandler {
 	
 	private final RSAEncryption rsa;
+	private final AESEncryption aes;
 	
 	public SecurityHandler() throws GeneralSecurityException {
 		this.rsa = new RSAEncryption();
+		this.aes = new AESEncryption();
 	}
 	/**
 	 * Exchanges public keys
@@ -26,9 +32,11 @@ public class SecurityHandler {
 		output.println(out);
 		// Waits until scanner has next or stream is closed
 		if (input.hasNext()) {
-			String publicKeyMessage = input.next();
-			RSAPublicKeyData publicKey = converter.fromJson(publicKeyMessage, RSAPublicKeyData.class);
-			this.rsa.setOtherPublicKey(publicKey);
+			String initMessage = input.next();
+			System.out.println(initMessage);
+			initMessage = this.rsa.decrypt(initMessage);
+			SymmetricHandshakeData data = converter.fromJson(initMessage, SymmetricHandshakeData.class);
+			this.aes.initialize(data.getKey(), data.getIv());
 		}
 	}
 	
@@ -40,7 +48,7 @@ public class SecurityHandler {
 	 * @return Base64 and RSA encrypted message
 	 */
 	public String encrypt(String message) {
-		return this.rsa.encrypt(message);
+		return this.aes.encrypt(message);
 	}
 	
 	/**
@@ -50,7 +58,7 @@ public class SecurityHandler {
 	 * @return unencrypted message
 	 */
 	public String decrypt(String message) {
-		return this.rsa.decrypt(message);
+		return this.aes.decrypt(message);
 	}
 
 }
