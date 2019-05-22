@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
@@ -185,11 +184,12 @@ namespace Server.Tcp
             string json = parameters.ToJson();
 
             byte[] cipher = TronServer.Security.RSA.Encrypt(Encoding.UTF8.GetBytes(json), client);
-            byte[] newline = Encoding.UTF8.GetBytes(Environment.NewLine);
+            string cipherText = Convert.ToBase64String(cipher);
+            cipherText = string.Concat(cipherText, Environment.NewLine);
+            byte[] cipherBase = Encoding.UTF8.GetBytes(cipherText);
 
             NetworkStream stream = client.GetStream();
-            stream.Write(cipher, 0, cipher.Length);
-            stream.Write(newline, 0, newline.Length);
+            stream.Write(cipherBase, 0, cipherBase.Length);
             stream.Flush();
         }
 

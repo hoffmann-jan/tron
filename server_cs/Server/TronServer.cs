@@ -348,8 +348,8 @@ namespace Server
             Console.WriteLine($"{Environment.NewLine}SENDING MESSAGE TYPE:{protocol.Type}.{Environment.NewLine}");
             Console.WriteLine($"Sending: {plain}");
 #endif
-            byte[] cipherBytes = Security.AES.Encrypt(plain, client);
-            string cipherBase = Convert.ToBase64String(cipherBytes);
+            byte[] cipher = Security.AES.Encrypt(plain, client);
+            string cipherBase = Convert.ToBase64String(cipher);
             cipherBase = string.Concat(cipherBase, Environment.NewLine);
             byte[] cipherBaseBytes = Encoding.UTF8.GetBytes(cipherBase);
 

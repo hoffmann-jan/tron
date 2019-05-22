@@ -14,6 +14,7 @@ namespace Server.Encryption
             csps[client] = new AesCryptoServiceProvider();
             csps[client].GenerateIV();
             csps[client].GenerateKey();
+            csps[client].Padding = PaddingMode.PKCS7;
         }
 
         public bool HasClient(TcpClient client)
