@@ -53,7 +53,7 @@ namespace Server
         /// Connected Clients.
         /// </summary>
         public static ConcurrentDictionary<int, ClientInfo> Clients { get; set; }
-        public static RSAServerClientEncryption Encryption { get; set; } = new RSAServerClientEncryption();
+        public static SecurityHandler Security { get; set; } = new SecurityHandler();
         #endregion
 
         public static void StartTronServer(IPAddress ipAddress, int port)
@@ -348,8 +348,7 @@ namespace Server
             Console.WriteLine($"{Environment.NewLine}SENDING MESSAGE TYPE:{protocol.Type}.{Environment.NewLine}");
             Console.WriteLine($"Sending: {plain}");
 #endif
-            byte[] plainBytes = Encoding.UTF8.GetBytes(plain);
-            byte[] cipherBytes = Encryption.Encrypt(plainBytes, client);
+            byte[] cipherBytes = Security.AES.Encrypt(plain, client);
             string cipherBase = Convert.ToBase64String(cipherBytes);
             cipherBase = string.Concat(cipherBase, Environment.NewLine);
             byte[] cipherBaseBytes = Encoding.UTF8.GetBytes(cipherBase);

@@ -9,15 +9,16 @@ namespace Server.Encryption
         public sbyte[] modulus;
         public sbyte[] exponent;
 
+        [JsonIgnore]
         public byte[] Modulus
         {
             get { return modulus.Select(e => (byte)e).ToArray(); }
-            set { modulus = value.Select(e => (sbyte)e).ToArray(); }
         }
+
+        [JsonIgnore]
         public byte[] Exponent
         {
             get { return exponent.Select(e => (byte)e).ToArray(); }
-            set { exponent = value.Select(e => (sbyte)e).ToArray(); }
         }
 
         public static RSAPublicParamters FromJson(string json)

@@ -1,37 +1,39 @@
-﻿using System.Linq;
-using System.Numerics;
-
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 
 namespace Server.Encryption
 {
     public class RSAEncryption
     {
-        private RSACryptoServiceProvider csp = new RSACryptoServiceProvider(4096);
+        private Dictionary<TcpClient, RSACryptoServiceProvider> csps = new Dictionary<TcpClient, RSACryptoServiceProvider>();
 
-        public byte[] Decrypt(byte[] cipher)
+        public void AddClient(TcpClient client, RSAPublicParamters paramters)
         {
-            return csp.Decrypt(cipher, RSAEncryptionPadding.Pkcs1);
+            var cspParameters = new RSAParameters()
+            {
+                Modulus = RemoveJavaSignByte(paramters.Modulus),
+                Exponent = RemoveJavaSignByte(paramters.Exponent)
+            };
+
+            csps[client] = new RSACryptoServiceProvider();
+            csps[client].ImportParameters(cspParameters);
         }
 
-        public RSAPublicParamters PublicJavaParamters()
+        private static byte[] RemoveJavaSignByte(byte[] bytes)
         {
-            RSAParameters publicKey = csp.ExportParameters(false);
+            return bytes[0] != 0 ? bytes : bytes.Skip(1).ToArray();
+        }
 
-            byte[] modulus = publicKey.Modulus;
-            byte[] exponent = publicKey.Exponent;
+        public bool HasClient(TcpClient client)
+        {
+            return csps.ContainsKey(client);
+        }
 
-            // Add Java sign byte
-            if ((modulus[0] & (1 << 7)) != 0)
-                modulus = new byte[] { 0 }.Concat(modulus).ToArray();
-            if ((exponent[0] & (1 << 7)) != 0)
-                modulus = new byte[] { 0 }.Concat(exponent).ToArray();
-
-            return new RSAPublicParamters
-            {
-                Modulus = modulus,
-                Exponent = exponent
-            };
+        public byte[] Encrypt(byte[] plain, TcpClient client)
+        {
+            return csps[client].Encrypt(plain, RSAEncryptionPadding.Pkcs1);
         }
     }
 }

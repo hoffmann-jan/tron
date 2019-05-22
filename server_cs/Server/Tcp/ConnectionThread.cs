@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
@@ -25,8 +26,6 @@ namespace Server.Tcp
             NetworkStream ns = client.GetStream();
             connections++;
             Console.WriteLine($"New client accepted: {connections} active connections");
-
-            SendPublicParameters(client);
 
             int bytesToRead = 0, nextReadCount = 0, rc = 0;
             byte[] byteCount = BitConverter.GetBytes(1024);
@@ -110,13 +109,11 @@ namespace Server.Tcp
 
                             data = parts[0];
 
-                            if (TronServer.Encryption.HasClient(client))
+                            if (TronServer.Security.AES.HasClient(client))
                             {
                                 data = data.Replace(Environment.NewLine, "");
-                                byte[] readTextBytes = Convert.FromBase64String(data);
-                                byte[] plainTextBytes = TronServer.Encryption.Decrypt(readTextBytes);
-
-                                data = Encoding.UTF8.GetString(plainTextBytes);
+                                byte[] dataCipher = Convert.FromBase64String(data);
+                                data = TronServer.Security.AES.Decrypt(dataCipher, client);
 #if DEBUG
                                 Console.WriteLine($"Received from {client.Client.RemoteEndPoint}: {data}");
 #endif
@@ -137,9 +134,9 @@ namespace Server.Tcp
                                     ProtocolRecieved?.Invoke(protocolRecievedArguments);
                                 }
                             }
-                            else  // First message always contains the key
+                            else
                             {
-                                TronServer.Encryption.AddClient(client, RSAPublicParamters.FromJson(data));
+                                HandshakeClient(client, data);
                             }
                             data = parts[1];
                         }
@@ -179,17 +176,22 @@ namespace Server.Tcp
             }
         }
 
-        private void SendPublicParameters(TcpClient client)
+        private void HandshakeClient(TcpClient client, string rsaData)
         {
-            string json = TronServer.Encryption.PublicJavaParamters().ToJson();
-            json = string.Concat(json, Environment.NewLine);
-            byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
+            TronServer.Security.RSA.AddClient(client, RSAPublicParamters.FromJson(rsaData));
+            TronServer.Security.AES.AddClient(client);
 
-            var stream = client.GetStream();
-            stream.Write(jsonBytes, 0, jsonBytes.Length);
+            AESPublicParameters parameters = TronServer.Security.AES.PublicParameters(client);
+            string json = parameters.ToJson();
+
+            byte[] cipher = TronServer.Security.RSA.Encrypt(Encoding.UTF8.GetBytes(json), client);
+            byte[] newline = Encoding.UTF8.GetBytes(Environment.NewLine);
+
+            NetworkStream stream = client.GetStream();
+            stream.Write(cipher, 0, cipher.Length);
+            stream.Write(newline, 0, newline.Length);
             stream.Flush();
         }
-
 
         public delegate void ProtocolRecievedHandler(ProtocolRecievedArguments protocolRecievedArguments);
         public event ProtocolRecievedHandler ProtocolRecieved;
